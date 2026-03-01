@@ -1,0 +1,58 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { LayoutGrid, ShoppingBag, FileText, Info } from 'lucide-react';
+
+const navItems = [
+  { href: '/', label: 'Discover', icon: LayoutGrid },
+  { href: '/products', label: 'Products', icon: ShoppingBag },
+  { href: '/policies', label: 'Policies', icon: FileText },
+  { href: '/about', label: 'About Us', icon: Info },
+];
+
+export default function Sidebar() {
+  const pathname = usePathname();
+
+  return (
+    <aside className="fixed left-0 top-0 h-screen w-[280px] bg-app-bg border-r border-border flex flex-col p-6 z-50">
+      <div className="mb-10">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-8 h-8 bg-primary rounded-sm flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L2 8V20L12 22L22 20V8L12 2Z" stroke="black" strokeWidth="2"/>
+              <path d="M12 22V12" stroke="black" strokeWidth="2"/>
+              <path d="M22 8L12 12L2 8" stroke="black" strokeWidth="2"/>
+            </svg>
+          </div>
+          <span className="text-white font-bold text-xl">PARCEL</span>
+        </div>
+        <p className="text-text-muted uppercase text-[10px] tracking-[3px] ml-10">Reliable Hub System</p>
+      </div>
+
+      <nav className="flex-1">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`sidebar-link ${isActive ? 'active' : 'inactive'} mb-1`}
+            >
+              <Icon size={20} />
+              <span className="font-medium">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="bg-card-bg rounded-card p-3 flex items-center gap-3 mt-auto">
+        <div className="w-10 h-10 bg-[#3D9C4C] rounded-sm flex items-center justify-center text-white font-bold text-xs">
+          BFL
+        </div>
+        <span className="text-text-muted text-xs font-bold">Blox Football League</span>
+      </div>
+    </aside>
+  );
+}
