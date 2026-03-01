@@ -1,30 +1,13 @@
 import { NextResponse } from 'next/server';
+import ids from '@/app/data/groupClothingIds.json';
 
-const GROUP_ID = '35515756';
-
-async function fetchClothing(subcategory: string): Promise<any[]> {
-  const allItems: any[] = [];
-  let cursor: string | null = null;
-  
-  do {
-    const url = `https://catalog.roblox.com/v1/search/items?category=Clothing&creatorType=Group&creatorTargetId=${GROUP_ID}&subcategory=${subcategory}&limit=120${cursor ? `&cursor=${cursor}` : ''}`;
-    
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-    });
-
-    if (!response.ok) break;
-
-    const data = await response.json();
-    if (data.data?.length > 0) {
-      allItems.push(...data.data);
-    }
-    cursor = data.nextPageCursor || null;
-  } while (cursor);
-  
-  return allItems;
+interface Item {
+  id: number;
+  name: string;
+  description: string;
+  price: number | null;
+  link: string;
+  icon: string;
 }
 
 async function getDetails(assetIds: number[]): Promise<Map<number, any>> {
@@ -91,106 +74,94 @@ async function getThumbnails(assetIds: string[]): Promise<Record<string, string>
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const page = parseInt(searchParams.get('page') || '1');
-  const pageSize = parseInt(searchParams.get('pageSize') || '20');
+  const page = Number(searchParams.get('page') ?? '1');
+  const pageSize = Number(searchParams.get('pageSize') ?? '20');
+
+  const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 20;
+  const safePage = Number.isFinite(page) && page > 0 ? page : 1;
 
   try {
-    // Step 1: Get all search items (shirts + pants)
-    const allShirts = await fetchClothing('ClassicShirts');
-    const allPants = await fetchClothing('ClassicPants');
-    const allSearchItems = [...allShirts, ...allPants];
-    
-    console.log('RAW search items count:', allSearchItems.length);
+    // Normalize IDs to number[]
+    const allIds: number[] = (ids as (string | number)[]).map((id) =>
+      typeof id === 'string' ? Number(id) : id
+    );
 
-    if (allSearchItems.length === 0) {
-      return NextResponse.json({ items: [], page, pageSize, totalItems: 0, totalPages: 0 });
+    console.log('Total IDs:', allIds.length);
+
+    if (allIds.length === 0) {
+      return NextResponse.json({
+        items: [],
+        page: 1,
+        pageSize: safePageSize,
+        totalItems: 0,
+        totalPages: 0,
+      });
     }
 
-    // Step 2: Get details for all items
-    const assetIds = allSearchItems.map((item: any) => item.id);
-    const detailsMap = await getDetails(assetIds);
-    
-    console.log('RAW details count:', Object.keys(detailsMap).length);
-    const rawExample = Object.values(detailsMap)[0];
-    console.log('RAW example detail:', rawExample ? JSON.stringify(rawExample).slice(0, 500) : 'none');
+    // Fetch details
+    const detailsMap = await getDetails(allIds);
+    console.log('Details fetched:', detailsMap.size);
 
-    // Phase 1: No filtering - map ALL items
-    // Step 3: Get thumbnails
-    const thumbnails = await getThumbnails(assetIds.map(String));
-    console.log('Thumbnails received:', Object.keys(thumbnails).length);
+    // Fetch thumbnails
+    const thumbnails = await getThumbnails(allIds.map(String));
+    console.log('Thumbnails fetched:', Object.keys(thumbnails).length);
 
-    // Map ALL items (no filter)
-    let allItems = Object.values(detailsMap).map((detail: any) => {
+    // Build items
+    const allItems: Item[] = allIds.map((id) => {
+      const detail = detailsMap.get(id);
+      
       // Determine price
       let price: number | null = null;
-      if (typeof detail.price === 'number' && detail.price > 0) {
+      if (typeof detail?.price === 'number' && detail.price > 0) {
         price = detail.price;
-      } else if (typeof detail.priceInRobux === 'number' && detail.priceInRobux > 0) {
+      } else if (typeof detail?.priceInRobux === 'number' && detail.priceInRobux > 0) {
         price = detail.priceInRobux;
       }
       
       // Offsale check
-      if (detail.isOffsale === true || detail.purchasable === false) {
+      if (detail?.isOffsale === true || detail?.purchasable === false) {
         price = null;
       }
 
       return {
-        id: detail.id,
-        name: detail.name || '(Unnamed item)',
-        description: detail.description || '',
+        id,
+        name: detail?.name ?? `(Item ${id})`,
+        description: detail?.description ?? '',
         price: price,
-        link: `https://www.roblox.com/catalog/${detail.id}/`,
-        icon: thumbnails[String(detail.id)] || '',
+        link: `https://www.roblox.com/catalog/${id}/`,
+        icon: thumbnails[String(id)] || '',
       };
     });
-
-    console.log('All mapped items:', allItems.length);
-    console.log('Example final item:', allItems[0] ? JSON.stringify(allItems[0]) : 'none');
 
     // Sort by ID
     allItems.sort((a, b) => a.id - b.id);
 
-    // Phase 2: Simple clothing filter (if we have items)
-    // Filter by checking if item has price or is purchasable (likely clothing)
-    // or check assetType if available
-    const clothingFilter = (detail: any) => {
-      const assetType = (detail.assetType || '').toLowerCase();
-      const assetTypeId = detail.assetTypeId;
-      // Keep shirts, pants, or items with price (likely clothing)
-      return assetType === 'shirt' || 
-             assetType === 'pants' || 
-             assetTypeId === 11 || 
-             assetTypeId === 12 ||
-             (detail.price && detail.price > 0);
-    };
+    console.log('Total items built:', allItems.length);
 
-    const clothingItems = allItems.filter((item: any, index: number) => {
-      const detail = Object.values(detailsMap)[index];
-      return clothingFilter(detail);
-    });
-
-    console.log('Filtered clothing count:', clothingItems.length);
-
-    // Use clothing items if available, otherwise use all items
-    const finalItems = clothingItems.length > 0 ? clothingItems : allItems;
-
-    // Paginate
-    const totalItems = finalItems.length;
-    const totalPages = Math.ceil(totalItems / pageSize);
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    const pagedItems = finalItems.slice(start, end);
+    // Local pagination
+    const totalItems = allItems.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / safePageSize));
+    const clampedPage = Math.min(safePage, totalPages);
+    const start = (clampedPage - 1) * safePageSize;
+    const end = start + safePageSize;
+    const items = allItems.slice(start, end);
 
     return NextResponse.json({
-      items: pagedItems,
-      page,
-      pageSize,
+      items,
+      page: clampedPage,
+      pageSize: safePageSize,
       totalItems,
       totalPages,
     });
 
   } catch (error) {
     console.error('Error:', error);
-    return NextResponse.json({ error: 'Failed to fetch from Roblox' }, { status: 500 });
+    return NextResponse.json({
+      items: [],
+      page: 1,
+      pageSize: safePageSize,
+      totalItems: 0,
+      totalPages: 0,
+    });
   }
 }
