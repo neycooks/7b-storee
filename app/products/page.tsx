@@ -7,8 +7,6 @@ import RobloxCheckoutModal from '@/components/RobloxCheckoutModal';
 import ErrorModal from '@/components/ErrorModal';
 import { RobloxItem } from '@/types/roblox';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.7bstore.com';
-
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<RobloxItem | null>(null);
@@ -18,7 +16,7 @@ export default function Products() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_URL}/items`)
+    fetch('/api/items')
       .then(res => res.json())
       .then(data => {
         if (data.items) {

@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react';
 import { GROUP_INFO } from '@/types/roblox';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.7bstore.com';
-
 interface GroupStats {
   members: number;
   sales: number;
@@ -16,7 +14,7 @@ export default function Discover() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_URL}/group`)
+    fetch('/api/group')
       .then(res => res.json())
       .then(data => {
         if (data) {
