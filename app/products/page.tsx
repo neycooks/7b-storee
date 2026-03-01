@@ -123,8 +123,14 @@ export default function Products() {
                 
                 <div className="relative z-10">
                   <h3 className="text-white font-bold text-sm mb-1 line-clamp-2">{product.name}</h3>
-                  <p className="text-primary font-bold text-sm">
-                    {product.price ? `${product.price}R$` : 'Free'}
+                  <p className={`font-bold text-sm ${
+                    product.price === null ? 'text-red-400' : 'text-primary'
+                  }`}>
+                    {product.price === null 
+                      ? 'Offsale' 
+                      : product.price === 0 
+                        ? 'Free' 
+                        : `${product.price}R$`}
                   </p>
                 </div>
               </div>
