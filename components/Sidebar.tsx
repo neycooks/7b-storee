@@ -18,16 +18,14 @@ export default function Sidebar() {
     <aside className="w-full h-full bg-card-bg rounded-card p-6 flex flex-col">
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-8 h-8 bg-primary rounded-sm flex items-center justify-center">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L2 8V20L12 22L22 20V8L12 2Z" stroke="black" strokeWidth="2"/>
-              <path d="M12 22V12" stroke="black" strokeWidth="2"/>
-              <path d="M22 8L12 12L2 8" stroke="black" strokeWidth="2"/>
-            </svg>
-          </div>
+          <img 
+            src="https://i.imgur.com/4ausQA1.png" 
+            alt="7B STORE" 
+            className="w-10 h-10 object-contain rounded-lg"
+          />
           <span className="text-white font-bold text-xl">7B STORE</span>
         </div>
-        <p className="text-text-muted uppercase text-[10px] tracking-[3px] ml-10">Reliable Hub System</p>
+        <p className="text-text-muted uppercase text-[10px] tracking-[3px] ml-12">Reliable Hub System</p>
       </div>
 
       <nav className="flex-1">

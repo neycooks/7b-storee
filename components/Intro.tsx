@@ -38,7 +38,7 @@ export default function Intro() {
       <img 
         src="https://i.imgur.com/4ausQA1.png" 
         alt="7B STORE" 
-        className="w-40 h-40 object-contain mb-8 animate-scale-in"
+        className="w-40 h-40 object-contain mb-8 rounded-2xl animate-scale-in"
       />
       <h1 className="text-white font-bold text-3xl animate-fade-in-up">
         Welcome{userName ? `, ${userName}` : ''}.
