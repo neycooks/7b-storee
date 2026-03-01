@@ -1,42 +1,65 @@
 import { NextResponse } from 'next/server';
 
 const GROUP_ID = '35515756';
-const ROBLOX_API_KEY = process.env.ROBLOX_API_KEY;
-
-const MANUAL_ITEMS = [
-  { id: '1', name: 'Image Permissions', price: '25R$', description: 'Official image usage permissions', icon: '', url: `https://www.roblox.com/groups/${GROUP_ID}/7B-STORE#!/store` },
-  { id: '2', name: 'VIP Bundle', price: '100R$', description: 'Premium VIP access bundle', icon: '', url: `https://www.roblox.com/groups/${GROUP_ID}/7B-STORE#!/store` },
-  { id: '3', name: 'Premium Access', price: '250R$', description: 'Full premium access', icon: '', url: `https://www.roblox.com/groups/${GROUP_ID}/7B-STORE#!/store` },
-  { id: '4', name: 'Gold Pass', price: '500R$', description: 'Gold membership pass', icon: '', url: `https://www.roblox.com/groups/${GROUP_ID}/7B-STORE#!/store` },
-  { id: '5', name: 'Platinum Bundle', price: '1,000R$', description: 'Complete platinum package', icon: '', url: `https://www.roblox.com/groups/${GROUP_ID}/7B-STORE#!/store` },
-  { id: '6', name: 'Diamond Tier', price: '2,000R$', description: 'Diamond tier membership', icon: '', url: `https://www.roblox.com/groups/${GROUP_ID}/7B-STORE#!/store` },
-  { id: '7', name: 'Elite Pass', price: '3,500R$', description: 'Elite exclusive pass', icon: '', url: `https://www.roblox.com/groups/${GROUP_ID}/7B-STORE#!/store` },
-  { id: '8', name: 'Champion Bundle', price: '5,000R$', description: 'Champion package', icon: '', url: `https://www.roblox.com/groups/${GROUP_ID}/7B-STORE#!/store` },
-  { id: '9', name: 'Legendary Access', price: '7,500R$', description: 'Legendary tier access', icon: '', url: `https://www.roblox.com/groups/${GROUP_ID}/7B-STORE#!/store` },
-  { id: '10', name: 'Ultimate Package', price: '10,000R$', description: 'Ultimate everything package', icon: '', url: `https://www.roblox.com/groups/${GROUP_ID}/7B-STORE#!/store` },
-  { id: '11', name: 'Starter Pack', price: '50R$', description: 'Basic starter pack', icon: '', url: `https://www.roblox.com/groups/${GROUP_ID}/7B-STORE#!/store` },
-  { id: '12', name: 'Pro Membership', price: '400R$', description: 'Professional membership', icon: '', url: `https://www.roblox.com/groups/${GROUP_ID}/7B-STORE#!/store` },
-  { id: '13', name: 'Executive Suite', price: '1,500R$', description: 'Executive benefits', icon: '', url: `https://www.roblox.com/groups/${GROUP_ID}/7B-STORE#!/store` },
-  { id: '14', name: 'Royal Access', price: '2,500R$', description: 'Royal treatment access', icon: '', url: `https://www.roblox.com/groups/${GROUP_ID}/7B-STORE#!/store` },
-  { id: '15', name: 'Master Bundle', price: '4,000R$', description: 'Master tier package', icon: '', url: `https://www.roblox.com/groups/${GROUP_ID}/7B-STORE#!/store` },
-];
+const GROUP_NAME = '7B Store';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
-  const limit = 5;
-  
+  const limit = 10;
   const start = (page - 1) * limit;
-  const end = start + limit;
-  const paginatedItems = MANUAL_ITEMS.slice(start, end);
-  
-  const hasMore = end < MANUAL_ITEMS.length;
 
-  return NextResponse.json({ 
-    items: paginatedItems,
-    total: MANUAL_ITEMS.length,
-    page,
-    totalPages: Math.ceil(MANUAL_ITEMS.length / limit),
-    hasMore
-  });
+  try {
+    const response = await fetch(
+      `https://catalog.roblox.com/v1/search/items/details?category=All&limit=${limit}&sortOrder=Desc&start=${start}&sellerType=Group&sellerId=${GROUP_ID}`,
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch');
+    }
+
+    const data = await response.json();
+
+    if (data.data && data.data.length > 0) {
+      const items = data.data.map((item: any) => ({
+        id: String(item.id),
+        name: item.name || 'Item',
+        price: item.price ? `${item.price}R$` : 'Free',
+        description: item.description || `${GROUP_NAME} exclusive item`,
+        icon: item.thumbnailUrl || '',
+        url: item.url || `https://www.roblox.com/catalog/${item.id}/`,
+      }));
+
+      return NextResponse.json({
+        items,
+        total: data.totalCount || 0,
+        page,
+        totalPages: Math.ceil((data.totalCount || 0) / limit),
+        hasMore: start + limit < (data.totalCount || 0),
+      });
+    }
+
+    return NextResponse.json({
+      items: [],
+      total: 0,
+      page,
+      totalPages: 1,
+      hasMore: false,
+    });
+  } catch (error) {
+    console.error('Error fetching items:', error);
+    return NextResponse.json({
+      items: [],
+      total: 0,
+      page,
+      totalPages: 1,
+      hasMore: false,
+      error: 'Failed to fetch from Roblox',
+    });
+  }
 }
