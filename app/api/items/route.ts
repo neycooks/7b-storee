@@ -2,6 +2,30 @@ import { NextResponse } from 'next/server';
 
 const GROUP_ID = '35515756';
 
+async function getAssetDetails(assetIds: string[]): Promise<any[]> {
+  if (assetIds.length === 0) return [];
+  
+  try {
+    const idsString = assetIds.join(',');
+    const url = `https://catalog.roblox.com/v1/assets?assetIds=${idsString}`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      return data.data || [];
+    }
+  } catch (error) {
+    console.error('Asset details error:', error);
+  }
+  
+  return [];
+}
+
 async function getThumbnails(assetIds: string[]): Promise<Record<string, string>> {
   if (assetIds.length === 0) return {};
   
@@ -40,7 +64,7 @@ export async function GET(request: Request) {
   const pageSize = parseInt(searchParams.get('pageSize') || '20');
 
   try {
-    const allClothingItems: any[] = [];
+    const allItems: any[] = [];
     let cursor = '';
     let fetchedCount = 0;
     const maxItems = 100;
@@ -62,21 +86,17 @@ export async function GET(request: Request) {
       const data = await response.json();
       
       if (data.data && data.data.length > 0) {
-        const clothingItems = data.data.filter((item: any) => 
-          item.assetType === 'Shirt' || item.assetType === 'Pants'
-        );
-        
-        allClothingItems.push(...clothingItems);
+        allItems.push(...data.data);
         fetchedCount += data.data.length;
       }
 
       cursor = data.nextPageCursor || '';
       
-    } while (cursor && fetchedCount < maxItems && allClothingItems.length < maxItems);
+    } while (cursor && fetchedCount < maxItems);
 
-    console.log('Total clothing items found:', allClothingItems.length);
+    console.log('Raw items from Roblox:', allItems.length);
 
-    if (allClothingItems.length === 0) {
+    if (allItems.length === 0) {
       return NextResponse.json({
         items: [],
         page,
@@ -86,17 +106,32 @@ export async function GET(request: Request) {
       });
     }
 
-    const assetIds = allClothingItems.map((item: any) => String(item.id));
+    const assetIds = allItems.map((item: any) => String(item.id));
+    
+    const assetDetails = await getAssetDetails(assetIds);
     const thumbnails = await getThumbnails(assetIds);
 
-    const formattedItems = allClothingItems.map((item: any) => ({
-      id: item.id,
-      name: item.name || 'Untitled',
-      description: item.description || '',
-      price: item.price || null,
-      link: `https://www.roblox.com/catalog/${item.id}/`,
-      icon: thumbnails[String(item.id)] || '',
-    }));
+    console.log('Asset details received:', assetDetails.length);
+    console.log('Thumbnails received:', Object.keys(thumbnails).length);
+
+    const detailMap: Record<string, any> = {};
+    for (const detail of assetDetails) {
+      detailMap[String(detail.id)] = detail;
+    }
+
+    const formattedItems = allItems.map((item: any) => {
+      const detail = detailMap[String(item.id)] || {};
+      return {
+        id: item.id,
+        name: detail.name || `Item ${item.id}`,
+        description: detail.description || '',
+        price: detail.price || null,
+        link: `https://www.roblox.com/catalog/${item.id}/`,
+        icon: thumbnails[String(item.id)] || '',
+      };
+    });
+
+    console.log('Formatted items:', formattedItems.length);
 
     const totalItems = formattedItems.length;
     const totalPages = Math.ceil(totalItems / pageSize);
