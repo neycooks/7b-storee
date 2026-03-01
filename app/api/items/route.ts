@@ -2,32 +2,6 @@ import { NextResponse } from 'next/server';
 
 const GROUP_ID = '35515756';
 
-async function getCatalogDetails(assetIds: string[]): Promise<any[]> {
-  if (assetIds.length === 0) return [];
-  
-  try {
-    const response = await fetch('https://catalog.roblox.com/v1/catalog/items/details', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-      body: JSON.stringify({
-        items: assetIds.map(id => ({ itemType: 'Asset', id: parseInt(id) }))
-      }),
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      return data.data || [];
-    }
-  } catch (error) {
-    console.error('Catalog details error:', error);
-  }
-  
-  return [];
-}
-
 async function getThumbnails(assetIds: string[]): Promise<Record<string, string>> {
   if (assetIds.length === 0) return {};
   
@@ -60,43 +34,54 @@ async function getThumbnails(assetIds: string[]): Promise<Record<string, string>
   return {};
 }
 
+async function fetchClothing(subcategory: string): Promise<any[]> {
+  const allItems: any[] = [];
+  let cursor: string | null = null;
+  
+  do {
+    const url = `https://catalog.roblox.com/v1/search/items?category=Clothing&creatorType=Group&creatorTargetId=${GROUP_ID}&subcategory=${subcategory}&limit=120${cursor ? `&cursor=${cursor}` : ''}`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`Roblox API error for ${subcategory}:`, response.status);
+      break;
+    }
+
+    const data = await response.json();
+    
+    if (data.data && data.data.length > 0) {
+      allItems.push(...data.data);
+    }
+
+    cursor = data.nextPageCursor || null;
+    
+  } while (cursor);
+  
+  return allItems;
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
   const pageSize = parseInt(searchParams.get('pageSize') || '20');
 
   try {
-    const allSearchItems: any[] = [];
-    let cursor: string | null = null;
+    // Fetch both shirts and pants separately
+    const allShirts = await fetchClothing('ClassicShirts');
+    const allPants = await fetchClothing('ClassicPants');
+    
+    const allItems = allShirts.concat(allPants);
 
-    // Step 1: Fetch ALL items from search API with pagination
-    do {
-      const searchUrl = `https://catalog.roblox.com/v1/search/items?category=Clothing&creatorType=Group&creatorTargetId=${GROUP_ID}&limit=100${cursor ? `&cursor=${cursor}` : ''}`;
-      
-      const response = await fetch(searchUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        },
-      });
+    console.log('Total shirts:', allShirts.length);
+    console.log('Total pants:', allPants.length);
+    console.log('Example item:', allItems[0] ? JSON.stringify(allItems[0]).slice(0, 300) : 'none');
 
-      if (!response.ok) {
-        console.error('Roblox search error:', response.status);
-        break;
-      }
-
-      const data = await response.json();
-      
-      if (data.data && data.data.length > 0) {
-        allSearchItems.push(...data.data);
-      }
-
-      cursor = data.nextPageCursor || null;
-      
-    } while (cursor);
-
-    console.log('Total search items:', allSearchItems.length);
-
-    if (allSearchItems.length === 0) {
+    if (allItems.length === 0) {
       return NextResponse.json({
         items: [],
         page,
@@ -106,52 +91,26 @@ export async function GET(request: Request) {
       });
     }
 
-    // Step 2: Get catalog details for all items
-    const assetIds = allSearchItems.map((item: any) => String(item.id));
-    const catalogDetails = await getCatalogDetails(assetIds);
-    
-    console.log('Total detail records:', catalogDetails.length);
-    if (catalogDetails.length > 0) {
-      console.log('Example detail:', JSON.stringify(catalogDetails[0]).slice(0, 500));
-    }
-
-    // Step 3: Get thumbnails
+    // Get thumbnails
+    const assetIds = allItems.map((item: any) => String(item.id));
     const thumbnails = await getThumbnails(assetIds);
     console.log('Thumbnails received:', Object.keys(thumbnails).length);
 
-    // Step 4: Map details to items
-    const detailMap: Record<string, any> = {};
-    for (const detail of catalogDetails) {
-      detailMap[String(detail.id)] = detail;
-    }
-
-    // Step 5: Filter for shirts and pants only
-    // AssetTypeId: 11 = Shirt, 12 = Pants
-    const clothingItems = catalogDetails.filter((item: any) => {
-      const assetTypeId = item.assetTypeId;
-      return assetTypeId === 11 || assetTypeId === 12; // Shirt or Pants
-    });
-
-    console.log('Filtered clothing count:', clothingItems.length);
-    if (clothingItems.length > 0) {
-      console.log('Example clothing item:', JSON.stringify(clothingItems[0]).slice(0, 500));
-    }
-
-    // Step 6: Format items
-    const formattedItems = clothingItems.map((item: any) => {
-      // Determine price - check multiple possible fields
+    // Map to output format
+    const formattedItems = allItems.map((item: any) => {
+      // Determine price
       let price: number | null = null;
-      if (item.price !== undefined && item.price !== null) {
+      if (item.price !== undefined && item.price !== null && item.price > 0) {
         price = item.price;
-      } else if (item.priceInRobux !== undefined && item.priceInRobux !== null) {
+      } else if (item.priceInRobux !== undefined && item.priceInRobux !== null && item.priceInRobux > 0) {
         price = item.priceInRobux;
-      } else if (item.lowestPrice !== undefined && item.lowestPrice !== null) {
+      } else if (item.lowestPrice !== undefined && item.lowestPrice !== null && item.lowestPrice > 0) {
         price = item.lowestPrice;
       }
       
-      // If price is 0, check if it's actually free or offsale
+      // Check if offsale
       const isOffsale = item.isOffsale === true || item.purchasable === false;
-      if (isOffsale && price === null) {
+      if (isOffsale) {
         price = null;
       }
 
@@ -165,15 +124,17 @@ export async function GET(request: Request) {
       };
     });
 
-    // Step 7: Pagination
+    // Pagination
     const totalItems = formattedItems.length;
     const totalPages = Math.ceil(totalItems / pageSize);
     const start = (page - 1) * pageSize;
     const end = start + pageSize;
-    const paginatedItems = formattedItems.slice(start, end);
+    const pagedItems = formattedItems.slice(start, end);
+
+    console.log('API response items length:', pagedItems.length);
 
     return NextResponse.json({
-      items: paginatedItems,
+      items: pagedItems,
       page,
       pageSize,
       totalItems,
