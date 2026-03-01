@@ -3,34 +3,38 @@ import { NextResponse } from 'next/server';
 const GROUP_ID = '35515756';
 const ROBLOX_API_KEY = process.env.ROBLOX_API_KEY;
 
-export async function GET() {
-  if (!ROBLOX_API_KEY) {
-    return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
-  }
+const FALLBACK_DATA = {
+  name: '7B Store',
+  members: 1500,
+  sales: 619,
+  products: 21,
+};
 
+export async function GET() {
   try {
+    const headers: Record<string, string> = {};
+    if (ROBLOX_API_KEY) {
+      headers['x-api-key'] = ROBLOX_API_KEY;
+    }
+
     const response = await fetch(
       `https://groups.roblox.com/v1/groups/${GROUP_ID}`,
-      {
-        headers: {
-          'x-api-key': ROBLOX_API_KEY,
-        },
-      }
+      { headers }
     );
 
     if (!response.ok) {
-      throw new Error('Failed to fetch group');
+      return NextResponse.json(FALLBACK_DATA);
     }
 
     const data = await response.json();
 
     return NextResponse.json({
-      name: data.name || '7B Store',
-      members: data.memberCount || 0,
-      sales: 0,
-      products: 0,
+      name: data.name || FALLBACK_DATA.name,
+      members: data.memberCount || FALLBACK_DATA.members,
+      sales: FALLBACK_DATA.sales,
+      products: FALLBACK_DATA.products,
     });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch group' }, { status: 500 });
+    return NextResponse.json(FALLBACK_DATA);
   }
 }
