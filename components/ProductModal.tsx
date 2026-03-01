@@ -56,7 +56,7 @@ export default function ProductModal({ product, onClose, onPurchase, onShowCheck
 
           <div className="flex gap-3">
             <button
-              onClick={isOutOfStock ? undefined : onShowCheckout}
+              onClick={isOutOfStock ? undefined : onPurchase}
               disabled={isOutOfStock}
               className={`flex-1 py-3 px-6 rounded-card font-bold text-base transition-all
                 ${isOutOfStock 

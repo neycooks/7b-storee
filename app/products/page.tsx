@@ -1,47 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import ProductModal from '@/components/ProductModal';
 import RobloxCheckoutModal from '@/components/RobloxCheckoutModal';
 import ErrorModal from '@/components/ErrorModal';
+import { RobloxItem } from '@/types/roblox';
 
-interface Product {
-  id: string;
-  title: string;
-  price: string;
-  description: string;
-  badge: string;
-  stock: number;
-  rating: number;
-}
-
-const products: Product[] = [
-  { id: '1', title: 'Bail (400R$)', price: '400R$', description: 'Bail option for temporary release', badge: 'other', stock: 10, rating: 5 },
-  { id: '2', title: 'Supercup VIP Seating Allocation', price: '500R$', description: 'Premium VIP seating for all matches', badge: 'hospitality', stock: 5, rating: 4 },
-  { id: '3', title: 'Season 9 BFL Cup VIP Tickets', price: '100R$', description: 'Season 9 BFL Cup Final VIP Tickets', badge: 'hospitality', stock: 0, rating: 1 },
-  { id: '4', title: 'Bail (3000R$)', price: '3,000R$', description: 'Premium bail option', badge: 'other', stock: 3, rating: 5 },
-  { id: '5', title: 'Match Day Premium Pass', price: '250R$', description: 'Access to all premium match features', badge: 'hospitality', stock: 20, rating: 4 },
-  { id: '6', title: 'Training Facility Access', price: '150R$', description: 'Exclusive training facility access', badge: 'other', stock: 15, rating: 3 },
-  { id: '7', title: 'Team Jersey Bundle', price: '350R$', description: 'Complete team jersey collection', badge: 'merchandise', stock: 8, rating: 5 },
-  { id: '8', title: 'Stadium Tour', price: '75R$', description: 'Behind the scenes stadium tour', badge: 'other', stock: 25, rating: 4 },
-  { id: '9', title: 'Player Contract Premium', price: '1,200R$', description: 'Premium player contract benefits', badge: 'other', stock: 2, rating: 5 },
-  { id: '10', title: 'Championship Trophy Display', price: '800R$', description: 'Virtual trophy display for your profile', badge: 'merchandise', stock: 6, rating: 4 },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.7bstore.com';
 
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<RobloxItem | null>(null);
   const [showCheckout, setShowCheckout] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [products, setProducts] = useState<RobloxItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API_URL}/items`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.items) {
+          setProducts(data.items);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, []);
 
   const filteredProducts = products.filter(product =>
-    product.title.toLowerCase().includes(searchQuery.toLowerCase())
+    product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handlePurchase = () => {
-    setShowCheckout(false);
-    setShowError(true);
+  const handlePurchase = (productUrl: string) => {
+    window.open(productUrl, '_blank');
   };
 
   return (
@@ -59,7 +54,9 @@ export default function Products() {
         </div>
       </div>
 
-      <p className="text-text-muted text-xs mb-6">Showing {filteredProducts.length} out of {products.length} results</p>
+      <p className="text-text-muted text-xs mb-6">
+        {loading ? 'Loading...' : `Showing ${filteredProducts.length} out of ${products.length} results`}
+      </p>
 
       <div className="grid grid-cols-5 gap-4">
         {filteredProducts.map((product) => (
@@ -75,13 +72,13 @@ export default function Products() {
             </div>
             
             <div>
-              <span className="bg-black text-text-muted text-[10px] px-2 py-1 rounded-sm inline-block">
-                {product.badge}
-              </span>
+              {product.icon && (
+                <img src={product.icon} alt="" className="w-12 h-12 rounded mb-2 object-cover" />
+              )}
             </div>
             
             <div>
-              <h3 className="text-white font-bold text-base mb-1">{product.title}</h3>
+              <h3 className="text-white font-bold text-base mb-1">{product.name}</h3>
               <p className="text-primary font-bold text-sm">{product.price}</p>
             </div>
           </div>
@@ -90,18 +87,29 @@ export default function Products() {
 
       {selectedProduct && !showCheckout && (
         <ProductModal
-          product={selectedProduct}
+          product={{
+            id: selectedProduct.id,
+            title: selectedProduct.name,
+            price: selectedProduct.price,
+            description: selectedProduct.description,
+            badge: 'store',
+            stock: 1,
+            rating: 5,
+          }}
           onClose={() => setSelectedProduct(null)}
-          onPurchase={() => {}}
+          onPurchase={() => handlePurchase(selectedProduct.url)}
           onShowCheckout={() => setShowCheckout(true)}
         />
       )}
 
       {showCheckout && selectedProduct && (
         <RobloxCheckoutModal
-          product={selectedProduct}
+          product={{
+            title: selectedProduct.name,
+            price: selectedProduct.price,
+          }}
           onClose={() => setShowCheckout(false)}
-          onPurchase={handlePurchase}
+          onPurchase={() => handlePurchase(selectedProduct.url)}
         />
       )}
 
