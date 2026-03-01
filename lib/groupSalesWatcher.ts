@@ -6,10 +6,8 @@ const API_URL = `https://economy.roblox.com/v2/groups/${GROUP_ID}/transactions?l
 let lastTransactionId: string | null = null;
 let warnedAboutCookie = false;
 let warnedAboutWebhook = false;
-let hasLoggedSample = false;
-let initialized = false;
 
-async function pollOnce(): Promise<void> {
+async function pollGroupSalesOnce(): Promise<void> {
   const cookie = process.env.ROBLOX_SECURITY_COOKIE;
   
   if (!cookie && !warnedAboutCookie) {
@@ -49,9 +47,6 @@ async function pollOnce(): Promise<void> {
 
     const data = await response.json();
     
-    console.log('[GroupSalesWatcher] Response keys:', Object.keys(data));
-    console.log('[GroupSalesWatcher] Is data.data array:', Array.isArray(data.data));
-
     if (!data || !Array.isArray(data.data)) {
       console.log('[GroupSalesWatcher] No transaction data found or unexpected structure.');
       return;
@@ -59,25 +54,15 @@ async function pollOnce(): Promise<void> {
 
     const transactions = data.data;
     console.log(`[GroupSalesWatcher] Transactions count: ${transactions.length}`);
-    
-    if (transactions.length > 0) {
-      console.log('[GroupSalesWatcher] First transaction ID:', transactions[0].id);
-      console.log('[GroupSalesWatcher] Last transaction ID:', transactions[transactions.length - 1].id);
 
-      if (hasLoggedSample === false) {
-        console.log('[GroupSalesWatcher] Sample transaction structure:');
-        console.dir(transactions[0], { depth: 3 });
-        hasLoggedSample = true;
-      }
+    if (transactions.length === 0) {
+      return;
     }
 
     if (lastTransactionId === null) {
-      if (transactions.length > 0) {
-        const newestTransaction = transactions[0];
-        lastTransactionId = newestTransaction.id;
-        console.log(`[GroupSalesWatcher] Initialized with latest transaction ID: ${lastTransactionId}`);
-        initialized = true;
-      }
+      const newestTransaction = transactions[0];
+      lastTransactionId = newestTransaction.id;
+      console.log(`[GroupSalesWatcher] Initialized with latest transaction ID: ${lastTransactionId}`);
       return;
     }
 
@@ -167,17 +152,4 @@ async function sendDiscordWebhookForSale(sale: any): Promise<void> {
   }
 }
 
-export function startGroupSalesWatcher(): void {
-  console.log('[GroupSalesWatcher] Starting watcher for group 35515756');
-  
-  const intervalMs = parseInt(process.env.POLL_INTERVAL_MS || '', 10);
-  const pollInterval = isNaN(intervalMs) ? 30000 : intervalMs;
-
-  console.log(`[GroupSalesWatcher] Poll interval: ${pollInterval}ms`);
-
-  pollOnce();
-
-  setInterval(() => {
-    pollOnce();
-  }, pollInterval);
-}
+export { pollGroupSalesOnce };
