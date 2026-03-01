@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductModal from '@/components/ProductModal';
 import RobloxCheckoutModal from '@/components/RobloxCheckoutModal';
 import ErrorModal from '@/components/ErrorModal';
@@ -14,20 +14,30 @@ export default function Products() {
   const [showError, setShowError] = useState(false);
   const [products, setProducts] = useState<RobloxItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/items')
+  const fetchProducts = (pageNum: number) => {
+    setLoading(true);
+    fetch(`/api/items?page=${pageNum}`)
       .then(res => res.json())
       .then(data => {
         if (data.items) {
           setProducts(data.items);
+          setTotalPages(data.totalPages || 1);
+          setHasMore(data.hasMore || false);
         }
         setLoading(false);
       })
       .catch(() => {
         setLoading(false);
       });
-  }, []);
+  };
+
+  useEffect(() => {
+    fetchProducts(page);
+  }, [page]);
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -53,7 +63,7 @@ export default function Products() {
       </div>
 
       <p className="text-text-muted text-xs mb-6">
-        {loading ? 'Loading...' : `Showing ${filteredProducts.length} out of ${products.length} results`}
+        {loading ? 'Loading...' : `Page ${page} of ${totalPages}`}
       </p>
 
       <div className="grid grid-cols-5 gap-4">
@@ -82,6 +92,42 @@ export default function Products() {
           </div>
         ))}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4 mt-8">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1 || loading}
+            className="p-2 bg-card-bg rounded-card hover:bg-border disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft className="text-white" size={20} />
+          </button>
+          
+          <div className="flex gap-2">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                onClick={() => setPage(pageNum)}
+                className={`w-10 h-10 rounded-card font-bold text-sm ${
+                  pageNum === page 
+                    ? 'bg-primary text-black' 
+                    : 'bg-card-bg text-white hover:bg-border'
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages || loading}
+            className="p-2 bg-card-bg rounded-card hover:bg-border disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronRight className="text-white" size={20} />
+          </button>
+        </div>
+      )}
 
       {selectedProduct && !showCheckout && (
         <ProductModal
