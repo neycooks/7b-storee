@@ -46,8 +46,8 @@ export default function ProductModal({ product, onClose, onPurchase, onShowCheck
               <Star 
                 key={star} 
                 size={20} 
-                fill={star <= product.rating ? '#F3B25E' : 'none'}
-                stroke={star <= product.rating ? '#F3B25E' : '#A0A0A0'}
+                fill={star <= product.rating ? '#81A7FA' : 'none'}
+                stroke={star <= product.rating ? '#81A7FA' : '#A0A0A0'}
               />
             ))}
           </div>

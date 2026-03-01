@@ -34,21 +34,19 @@ export default function Discover() {
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="grid grid-cols-5 gap-6">
-        <div className="col-span-3 bg-card-bg rounded-lg p-6 relative overflow-hidden min-h-[280px]">
+        <div className="col-span-3 bg-card-bg rounded-lg p-6 relative overflow-hidden min-h-[280px] group cursor-pointer hover:scale-[1.02] transition-transform duration-300">
           <span className="bg-black text-white text-[10px] font-bold px-3 py-1 rounded-full absolute top-4 left-4">
             People&apos;s favourite
           </span>
           <h2 className="text-white font-extrabold text-[48px] leading-tight mt-16">
-            Image Permissions
+            Olise #17 Bayern Munich Third 25-26 SS
           </h2>
-          <p className="text-primary font-bold text-xl mt-4">25R$</p>
+          <p className="text-primary font-bold text-xl mt-4">5R$</p>
         </div>
 
         <div className="col-span-2 bg-card-bg rounded-lg p-6 relative overflow-hidden">
           <div className="absolute top-4 right-4 w-20 h-20 opacity-30">
-            <div className="w-full h-full bg-primary rounded flex items-center justify-center">
-              <span className="text-black font-bold text-xs">7B</span>
-            </div>
+            <img src="https://i.imgur.com/1kygngm.jpeg" alt="7B Store" className="w-full h-full object-contain rounded" />
           </div>
           <h3 className="text-white font-bold text-2xl mt-16">{GROUP_INFO.name}</h3>
           <p className="text-text-muted text-sm mb-3">Official Group Store</p>
@@ -61,15 +59,15 @@ export default function Discover() {
       <div>
         <h3 className="text-white font-bold text-sm tracking-wider mb-6">HUB OVERVIEW</h3>
         <div className="grid grid-cols-3 gap-6">
-          <div className="bg-card-bg rounded-card p-6">
+          <div className="bg-card-bg rounded-card p-6 hover:scale-105 transition-transform duration-300 cursor-pointer">
             <p className="text-text-muted text-xs mb-2">Connected Account</p>
             <p className="text-white font-extrabold text-[32px]">ABRA</p>
           </div>
-          <div className="bg-card-bg rounded-card p-6">
+          <div className="bg-card-bg rounded-card p-6 hover:scale-105 transition-transform duration-300 cursor-pointer">
             <p className="text-text-muted text-xs mb-2">Total Sales</p>
             <p className="text-white font-extrabold text-[32px]">{loading ? '...' : stats.sales}</p>
           </div>
-          <div className="bg-card-bg rounded-card p-6">
+          <div className="bg-card-bg rounded-card p-6 hover:scale-105 transition-transform duration-300 cursor-pointer">
             <p className="text-text-muted text-xs mb-2">Owned Products</p>
             <p className="text-white font-extrabold text-[32px]">{loading ? '...' : stats.products}</p>
           </div>

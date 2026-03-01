@@ -47,12 +47,10 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="bg-app-bg rounded-card p-3 flex items-center gap-3">
-        <div className="w-10 h-10 bg-[#3D9C4C] rounded-sm flex items-center justify-center text-white font-bold text-xs">
-          BFL
-        </div>
-        <span className="text-text-muted text-xs font-bold">Blox Football League</span>
-      </div>
+      <a href="https://discord.gg/A7BK2qnX97" target="_blank" rel="noopener noreferrer" className="bg-app-bg rounded-card p-3 flex items-center gap-3 hover:bg-border transition-colors cursor-pointer">
+        <img src="https://i.imgur.com/h4cpcUg.gif" alt="7B Academy" className="w-10 h-10 rounded-sm object-cover" />
+        <span className="text-text-muted text-xs font-bold">7B Academy</span>
+      </a>
     </aside>
   );
 }

@@ -11,7 +11,7 @@ const config: Config = {
       colors: {
         'app-bg': '#0C0C0C',
         'card-bg': '#151515',
-        primary: '#F3B25E',
+        primary: '#81A7FA',
         'text-primary': '#FFFFFF',
         'text-muted': '#A0A0A0',
         border: '#222222',
