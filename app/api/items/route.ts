@@ -117,11 +117,11 @@ export async function GET(request: Request) {
 
     // Step 3: Filter to shirts/pants only (assetTypeId 11=Shirt, 12=Pants)
     const clothingItems: any[] = [];
-    for (const [id, detail] of detailsMap) {
+    detailsMap.forEach((detail, id) => {
       if (detail.assetTypeId === 11 || detail.assetTypeId === 12) {
         clothingItems.push({ ...detail, searchItem: allSearchItems.find((s: any) => s.id === id) });
       }
-    }
+    });
 
     // Step 4: Get thumbnails
     const thumbnails = await getThumbnails(clothingItems.map((item: any) => String(item.id)));
