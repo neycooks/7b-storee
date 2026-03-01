@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  console.log('[Cron] /api/cron called (simple test)');
+  console.log('[Test] /api/test-log called');
   return NextResponse.json({ ok: true });
 }
