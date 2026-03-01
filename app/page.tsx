@@ -65,11 +65,11 @@ export default function Discover() {
           </div>
           <div className="bg-card-bg rounded-card p-6 hover:scale-105 transition-transform duration-300 cursor-pointer">
             <p className="text-text-muted text-xs mb-2">Total Sales</p>
-            <p className="text-white font-extrabold text-[32px]">{loading ? '...' : stats.sales}</p>
+            <p className="text-white font-extrabold text-[32px]">2000+</p>
           </div>
           <div className="bg-card-bg rounded-card p-6 hover:scale-105 transition-transform duration-300 cursor-pointer">
-            <p className="text-text-muted text-xs mb-2">Owned Products</p>
-            <p className="text-white font-extrabold text-[32px]">{loading ? '...' : stats.products}</p>
+            <p className="text-text-muted text-xs mb-2">Experience</p>
+            <p className="text-white font-extrabold text-[32px]">4 Years</p>
           </div>
         </div>
       </div>

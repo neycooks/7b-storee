@@ -8,8 +8,8 @@ import Intro from '@/components/Intro';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'PARCEL - Reliable Hub System',
-  description: 'PARCEL Reliable Hub System',
+  title: '7B STORE',
+  description: '7B STORE - Reliable Hub System',
 };
 
 export default function RootLayout({

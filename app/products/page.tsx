@@ -163,7 +163,7 @@ export default function Products() {
         </>
       )}
 
-      {selectedProduct && !showCheckout && (
+      {selectedProduct && (
         <ProductModal
           product={{
             id: String(selectedProduct.id),
@@ -172,27 +172,10 @@ export default function Products() {
             description: selectedProduct.description || 'No description available',
             badge: 'clothing',
             stock: 1,
-            rating: 5,
           }}
           onClose={() => setSelectedProduct(null)}
           onPurchase={() => handlePurchase(selectedProduct.link)}
-          onShowCheckout={() => setShowCheckout(true)}
         />
-      )}
-
-      {showCheckout && selectedProduct && (
-        <RobloxCheckoutModal
-          product={{
-            title: selectedProduct.name,
-            price: selectedProduct.price ? `${selectedProduct.price}R$` : 'Free',
-          }}
-          onClose={() => setShowCheckout(false)}
-          onPurchase={() => handlePurchase(selectedProduct.link)}
-        />
-      )}
-
-      {showError && (
-        <ErrorModal onClose={() => setShowError(false)} />
       )}
     </div>
   );

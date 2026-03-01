@@ -19,14 +19,6 @@ const policies = [
     title: 'Instant Delivery',
     description: 'All purchases are delivered instantly to your Roblox account. No waiting, no delays.',
   },
-  {
-    title: 'Refund Policy',
-    description: 'We offer refunds within 24 hours for any undelivered items. Contact support for assistance.',
-  },
-  {
-    title: '24/7 Support',
-    description: 'Our team is available around the clock to help with any questions or issues you may encounter.',
-  },
 ];
 
 export default function Policies() {

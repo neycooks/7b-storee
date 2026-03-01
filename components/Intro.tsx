@@ -5,6 +5,19 @@ import { useState, useEffect } from 'react';
 export default function Intro() {
   const [showIntro, setShowIntro] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
+  const [userName, setUserName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('discord_user='));
+    if (cookie) {
+      try {
+        const userData = JSON.parse(cookie.split('=')[1]);
+        setUserName(userData.global_name || userData.username);
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -31,7 +44,9 @@ export default function Intro() {
           <path d="M12 2V8" stroke="black" strokeWidth="2"/>
         </svg>
       </div>
-      <h1 className="text-white font-bold text-3xl">Welcome, Abra.</h1>
+      <h1 className="text-white font-bold text-3xl">
+        Welcome{userName ? `, ${userName}` : ''}.
+      </h1>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 const pageNames: Record<string, string> = {
   '/': 'DISCOVER',
@@ -10,10 +10,19 @@ const pageNames: Record<string, string> = {
   '/about': 'ABOUT US',
 };
 
+interface DiscordUser {
+  id: string;
+  username: string;
+  avatar: string;
+  global_name: string;
+}
+
 export default function TopBar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const title = pageNames[pathname] || 'DISCOVER';
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState<DiscordUser | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,6 +32,29 @@ export default function TopBar() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('discord_user='));
+    if (cookie) {
+      try {
+        const userData = JSON.parse(cookie.split('=')[1]);
+        setUser(userData);
+      } catch (e) {
+        console.error('Failed to parse user', e);
+      }
+    }
+  }, [searchParams]);
+
+  const handleLogin = () => {
+    window.location.href = '/api/auth/discord';
+  };
+
+  const getAvatarUrl = (user: DiscordUser) => {
+    if (!user.avatar) return null;
+    return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+  };
+
+  const displayName = user?.global_name || user?.username || 'User';
 
   return (
     <header 
@@ -35,13 +67,27 @@ export default function TopBar() {
       <h1 className="text-white font-bold text-base tracking-[2px]">{title}</h1>
       
       <div className="flex items-center gap-3">
-        <span className="text-white font-bold text-base">ERION_TPSS</span>
-        <div className="w-10 h-10 rounded-full bg-card-bg flex items-center justify-center overflow-hidden">
-          <div className="w-8 h-8 bg-yellow-400 rounded-full relative">
-            <div className="absolute top-1 left-1/2 -translate-x-1/2 w-4 h-3 bg-black rounded-sm"></div>
-            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-black rounded-sm"></div>
-          </div>
-        </div>
+        {user ? (
+          <>
+            <span className="text-white font-bold text-base">{displayName}</span>
+            <div className="w-10 h-10 rounded-full bg-card-bg flex items-center justify-center overflow-hidden">
+              {getAvatarUrl(user) ? (
+                <img src={getAvatarUrl(user)!} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-primary flex items-center justify-center text-black font-bold">
+                  {displayName[0].toUpperCase()}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <button
+            onClick={handleLogin}
+            className="bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold py-2 px-4 rounded-card transition-all hover:scale-105"
+          >
+            Login with Discord
+          </button>
+        )}
       </div>
     </header>
   );

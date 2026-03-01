@@ -25,7 +25,7 @@ export default function Sidebar() {
               <path d="M22 8L12 12L2 8" stroke="black" strokeWidth="2"/>
             </svg>
           </div>
-          <span className="text-white font-bold text-xl">PARCEL</span>
+          <span className="text-white font-bold text-xl">7B STORE</span>
         </div>
         <p className="text-text-muted uppercase text-[10px] tracking-[3px] ml-10">Reliable Hub System</p>
       </div>
