@@ -25,10 +25,10 @@ async function pollGroupSalesOnce(): Promise<void> {
   }
 
   try {
-    console.log('[GroupSalesWatcher] Polling for transactions...');
+    console.log('[GroupSalesWatcher] Calling Roblox API for group 35515756');
     const response = await fetch(API_URL, { headers });
     
-    console.log(`[GroupSalesWatcher] Response status: ${response.status} ${response.statusText}`);
+    console.log('[GroupSalesWatcher] Roblox API status:', response.status);
 
     if (response.status === 401 || response.status === 403) {
       console.warn('[GroupSalesWatcher] 401/403 - .ROBLOSECURITY cookie may be invalid or not allowed for this group.');
@@ -48,12 +48,13 @@ async function pollGroupSalesOnce(): Promise<void> {
     const data = await response.json();
     
     if (!data || !Array.isArray(data.data)) {
-      console.log('[GroupSalesWatcher] No transaction data found or unexpected structure.');
+      console.log('[GroupSalesWatcher] Transactions count: no data array');
+      console.log('[GroupSalesWatcher] Response keys:', Object.keys(data || {}));
       return;
     }
 
     const transactions = data.data;
-    console.log(`[GroupSalesWatcher] Transactions count: ${transactions.length}`);
+    console.log('[GroupSalesWatcher] Transactions count:', transactions.length);
 
     if (transactions.length === 0) {
       return;
@@ -76,7 +77,7 @@ async function pollGroupSalesOnce(): Promise<void> {
       }
     }
 
-    console.log(`[GroupSalesWatcher] New transactions found: ${newTransactions.length}`);
+    console.log('[GroupSalesWatcher] New transactions found:', newTransactions.length);
 
     if (newTransactions.length === 0) {
       return;
@@ -112,7 +113,7 @@ async function sendDiscordWebhookForSale(sale: any): Promise<void> {
   const price = sale.currency?.amount || sale.price || sale.amount || 0;
   const timestamp = sale.createdAt || new Date().toISOString();
 
-  console.log(`[GroupSalesWebhook] Processing sale - Buyer: ${buyerName}, Item: ${itemName}, Price: ${price}`);
+  console.log('[GroupSalesWebhook] Sending webhook for sale:', transactionId);
 
   const payload = {
     content: '**New group sale detected**',
@@ -142,13 +143,15 @@ async function sendDiscordWebhookForSale(sale: any): Promise<void> {
       body: JSON.stringify(payload),
     });
 
+    console.log('[GroupSalesWebhook] Discord response status:', response.status);
+
     if (response.ok) {
       console.log(`[GroupSalesWebhook] Sent Discord webhook for sale ${transactionId}`);
     } else {
-      console.error(`[GroupSalesWebhook] Failed to send webhook: ${response.status} ${response.statusText}`);
+      console.error('[GroupSalesWebhook] Failed to send webhook:', response.status);
     }
   } catch (error) {
-    console.error('[GroupSalesWebhook] Error sending webhook:', error);
+    console.error('[GroupSalesWebhook] Failed to send webhook:', error);
   }
 }
 
