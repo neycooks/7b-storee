@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { GROUP_INFO } from '@/types/roblox';
 
 interface GroupStats {
@@ -9,9 +10,17 @@ interface GroupStats {
   products: number;
 }
 
+interface DiscordUser {
+  id: string;
+  username: string;
+  global_name: string;
+}
+
 export default function Discover() {
   const [stats, setStats] = useState<GroupStats>({ members: 0, sales: 0, products: 0 });
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<DiscordUser | null>(null);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     fetch('/api/group')
@@ -30,6 +39,30 @@ export default function Discover() {
         setLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    const checkUser = () => {
+      const cookie = document.cookie.split('; ').find(row => row.startsWith('discord_user='));
+      if (cookie) {
+        try {
+          const userData = JSON.parse(cookie.split('=')[1]);
+          setUser(userData);
+        } catch (e) {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+    };
+
+    checkUser();
+    
+    if (searchParams.get('logged_in') === 'true') {
+      checkUser();
+    }
+  }, [searchParams]);
+
+  const displayName = user?.global_name || user?.username || 'Guest';
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -61,7 +94,7 @@ export default function Discover() {
         <div className="grid grid-cols-3 gap-6">
           <div className="bg-card-bg rounded-card p-6 hover:scale-105 transition-transform duration-300 cursor-pointer">
             <p className="text-text-muted text-xs mb-2">Connected Account</p>
-            <p className="text-white font-extrabold text-[32px]">ABRA</p>
+            <p className="text-white font-extrabold text-[32px]">{displayName}</p>
           </div>
           <div className="bg-card-bg rounded-card p-6 hover:scale-105 transition-transform duration-300 cursor-pointer">
             <p className="text-text-muted text-xs mb-2">Total Sales</p>

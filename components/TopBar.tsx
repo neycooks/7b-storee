@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 
 const pageNames: Record<string, string> = {
   '/': 'DISCOVER',
@@ -20,6 +20,7 @@ interface DiscordUser {
 export default function TopBar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const title = pageNames[pathname] || 'DISCOVER';
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<DiscordUser | null>(null);
@@ -34,16 +35,28 @@ export default function TopBar() {
   }, []);
 
   useEffect(() => {
-    const cookie = document.cookie.split('; ').find(row => row.startsWith('discord_user='));
-    if (cookie) {
-      try {
-        const userData = JSON.parse(cookie.split('=')[1]);
-        setUser(userData);
-      } catch (e) {
-        console.error('Failed to parse user', e);
+    const checkUser = () => {
+      const cookie = document.cookie.split('; ').find(row => row.startsWith('discord_user='));
+      if (cookie) {
+        try {
+          const userData = JSON.parse(cookie.split('=')[1]);
+          setUser(userData);
+        } catch (e) {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
       }
+    };
+
+    checkUser();
+    
+    const params = searchParams;
+    if (params.get('logged_in') === 'true') {
+      checkUser();
+      router.replace('/', { scroll: false });
     }
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   const handleLogin = () => {
     window.location.href = '/api/auth/discord';
@@ -54,7 +67,7 @@ export default function TopBar() {
     return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
   };
 
-  const displayName = user?.global_name || user?.username || 'User';
+  const displayName = user?.global_name || user?.username || null;
 
   return (
     <header 
@@ -72,10 +85,10 @@ export default function TopBar() {
             <span className="text-white font-bold text-base">{displayName}</span>
             <div className="w-10 h-10 rounded-full bg-card-bg flex items-center justify-center overflow-hidden">
               {getAvatarUrl(user) ? (
-                <img src={getAvatarUrl(user)!} alt={displayName} className="w-full h-full object-cover" />
+                <img src={getAvatarUrl(user)!} alt={displayName!} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-primary flex items-center justify-center text-black font-bold">
-                  {displayName[0].toUpperCase()}
+                  {displayName ? displayName[0].toUpperCase() : 'U'}
                 </div>
               )}
             </div>
