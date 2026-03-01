@@ -59,8 +59,47 @@ export default function Products() {
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handlePurchase = (productUrl: string) => {
-    window.open(productUrl, '_blank');
+  const getDiscordUser = (): any | null => {
+    if (typeof document === 'undefined') return null;
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'discord_user') {
+        try {
+          return JSON.parse(decodeURIComponent(value));
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  };
+
+  const handlePurchase = async (product: RobloxItem) => {
+    const user = getDiscordUser();
+    
+    // Send webhook notification
+    if (user) {
+      try {
+        await fetch('/api/webhook/purchase', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            username: user.global_name || user.username,
+            avatar: user.avatar,
+            itemName: product.name,
+            itemPrice: product.price ? `${product.price}R$` : 'Free',
+            itemLink: product.link,
+            itemIcon: product.icon,
+          }),
+        });
+      } catch (e) {
+        console.error('Webhook error:', e);
+      }
+    }
+    
+    window.open(product.link, '_blank');
   };
 
   return (
@@ -174,7 +213,7 @@ export default function Products() {
             stock: 1,
           }}
           onClose={() => setSelectedProduct(null)}
-          onPurchase={() => handlePurchase(selectedProduct.link)}
+          onPurchase={() => handlePurchase(selectedProduct)}
         />
       )}
     </div>

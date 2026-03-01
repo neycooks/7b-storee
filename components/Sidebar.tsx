@@ -21,7 +21,7 @@ export default function Sidebar() {
           <img 
             src="https://i.imgur.com/4ausQA1.png" 
             alt="7B STORE" 
-            className="w-10 h-10 object-contain rounded-lg"
+            className="w-10 h-10 object-contain rounded-2xl"
           />
           <span className="text-white font-bold text-xl">7B STORE</span>
         </div>
