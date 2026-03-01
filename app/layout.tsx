@@ -4,6 +4,9 @@ import { Inter } from 'next/font/google';
 import Sidebar from '@/components/Sidebar';
 import TopBar from '@/components/TopBar';
 import Intro from '@/components/Intro';
+import { initBackgroundJobs } from '@/lib/bootstrap';
+
+initBackgroundJobs();
 
 const inter = Inter({ subsets: ['latin'] });
 
