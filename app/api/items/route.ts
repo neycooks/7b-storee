@@ -37,16 +37,16 @@ async function getThumbnails(assetIds: string[]): Promise<Record<string, string>
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
-  const limit = 30;
+  const pageSize = parseInt(searchParams.get('pageSize') || '20');
 
   try {
-    const allItems: any[] = [];
+    const allClothingItems: any[] = [];
     let cursor = '';
-    let pageCount = 0;
-    const maxPages = 10;
+    let fetchedCount = 0;
+    const maxItems = 100;
 
     do {
-      const searchUrl = `https://catalog.roblox.com/v1/search/items?category=Clothing&creatorType=Group&creatorTargetId=${GROUP_ID}&limit=${limit}${cursor ? `&cursor=${cursor}` : ''}`;
+      const searchUrl = `https://catalog.roblox.com/v1/search/items?category=Clothing&creatorType=Group&creatorTargetId=${GROUP_ID}&limit=100${cursor ? `&cursor=${cursor}` : ''}`;
       
       const response = await fetch(searchUrl, {
         headers: {
@@ -55,7 +55,8 @@ export async function GET(request: Request) {
       });
 
       if (!response.ok) {
-        break;
+        console.error('Roblox API error:', response.status);
+        return NextResponse.json({ error: 'Failed to fetch from Roblox' }, { status: 500 });
       }
 
       const data = await response.json();
@@ -65,57 +66,54 @@ export async function GET(request: Request) {
           item.assetType === 'Shirt' || item.assetType === 'Pants'
         );
         
-        allItems.push(...clothingItems);
+        allClothingItems.push(...clothingItems);
+        fetchedCount += data.data.length;
       }
 
       cursor = data.nextPageCursor || '';
-      pageCount++;
       
-    } while (cursor && pageCount < maxPages);
+    } while (cursor && fetchedCount < maxItems && allClothingItems.length < maxItems);
 
-    if (allItems.length === 0) {
+    console.log('Total clothing items found:', allClothingItems.length);
+
+    if (allClothingItems.length === 0) {
       return NextResponse.json({
         items: [],
-        total: 0,
         page,
-        totalPages: 1,
-        hasMore: false,
+        pageSize,
+        totalItems: 0,
+        totalPages: 0,
       });
     }
 
-    const assetIds = allItems.map((item: any) => String(item.id));
+    const assetIds = allClothingItems.map((item: any) => String(item.id));
     const thumbnails = await getThumbnails(assetIds);
 
-    const formattedItems = allItems.map((item: any) => ({
-      id: String(item.id),
+    const formattedItems = allClothingItems.map((item: any) => ({
+      id: item.id,
       name: item.name || 'Untitled',
       description: item.description || '',
       price: item.price || null,
+      link: `https://www.roblox.com/catalog/${item.id}/`,
       icon: thumbnails[String(item.id)] || '',
-      url: `https://www.roblox.com/catalog/${item.id}/`,
     }));
 
-    const start = (page - 1) * limit;
-    const end = start + limit;
+    const totalItems = formattedItems.length;
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
     const paginatedItems = formattedItems.slice(start, end);
 
     return NextResponse.json({
       items: paginatedItems,
-      total: formattedItems.length,
       page,
-      totalPages: Math.ceil(formattedItems.length / limit),
-      hasMore: end < formattedItems.length,
+      pageSize,
+      totalItems,
+      totalPages,
     });
 
   } catch (error) {
-    console.error('Error fetching items:', error);
-    return NextResponse.json({
-      items: [],
-      total: 0,
-      page,
-      totalPages: 1,
-      hasMore: false,
-      error: 'Failed to fetch from Roblox',
-    });
+    console.error('Error:', error);
+    return NextResponse.json({ error: 'Failed to fetch from Roblox' }, { status: 500 });
   }
 }
