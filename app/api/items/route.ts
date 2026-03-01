@@ -2,41 +2,6 @@ import { NextResponse } from 'next/server';
 
 const GROUP_ID = '35515756';
 
-async function getThumbnails(assetIds: string[]): Promise<Record<string, string>> {
-  if (assetIds.length === 0) return {};
-  
-  const thumbnailMap: Record<string, string> = {};
-  
-  // Process in batches of 100
-  for (let i = 0; i < assetIds.length; i += 100) {
-    const batch = assetIds.slice(i, i + 100);
-    const idsString = batch.join(',');
-    const thumbnailUrl = `https://thumbnails.roblox.com/v1/assets?assetIds=${idsString}&returnPolicy=PlaceHolder&size=150x150&format=Png&aspectRatio=1x1`;
-    
-    try {
-      const thumbResponse = await fetch(thumbnailUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        },
-      });
-      
-      if (thumbResponse.ok) {
-        const thumbData = await thumbResponse.json();
-        
-        if (thumbData.data) {
-          for (const thumb of thumbData.data) {
-            thumbnailMap[thumb.targetId] = thumb.imageUrl || '';
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Thumbnail batch error:', error);
-    }
-  }
-  
-  return thumbnailMap;
-}
-
 async function fetchClothing(subcategory: string): Promise<any[]> {
   const allItems: any[] = [];
   let cursor: string | null = null;
@@ -50,22 +15,79 @@ async function fetchClothing(subcategory: string): Promise<any[]> {
       },
     });
 
-    if (!response.ok) {
-      console.error(`Roblox API error for ${subcategory}:`, response.status);
-      break;
-    }
+    if (!response.ok) break;
 
     const data = await response.json();
-    
-    if (data.data && data.data.length > 0) {
+    if (data.data?.length > 0) {
       allItems.push(...data.data);
     }
-
     cursor = data.nextPageCursor || null;
-    
   } while (cursor);
   
   return allItems;
+}
+
+async function getDetails(assetIds: number[]): Promise<Map<number, any>> {
+  const detailsMap = new Map<number, any>();
+  
+  // Batch requests - 50 IDs per request
+  for (let i = 0; i < assetIds.length; i += 50) {
+    const batch = assetIds.slice(i, i + 50);
+    
+    try {
+      const response = await fetch('https://catalog.roblox.com/v1/catalog/items/details', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
+        body: JSON.stringify({
+          items: batch.map(id => ({ itemType: 'Asset', id }))
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data) {
+          for (const detail of data.data) {
+            detailsMap.set(detail.id, detail);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Details batch error:', error);
+    }
+  }
+  
+  return detailsMap;
+}
+
+async function getThumbnails(assetIds: string[]): Promise<Record<string, string>> {
+  const thumbnailMap: Record<string, string> = {};
+  
+  for (let i = 0; i < assetIds.length; i += 100) {
+    const batch = assetIds.slice(i, i + 100);
+    const url = `https://thumbnails.roblox.com/v1/assets?assetIds=${batch.join(',')}&returnPolicy=PlaceHolder&size=150x150&format=Png&aspectRatio=1x1`;
+    
+    try {
+      const response = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data) {
+          for (const thumb of data.data) {
+            thumbnailMap[thumb.targetId] = thumb.imageUrl || '';
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Thumbnail error:', error);
+    }
+  }
+  
+  return thumbnailMap;
 }
 
 export async function GET(request: Request) {
@@ -74,75 +96,74 @@ export async function GET(request: Request) {
   const pageSize = parseInt(searchParams.get('pageSize') || '20');
 
   try {
-    // Fetch both shirts and pants separately - ONCE per request
+    // Step 1: Get all search items (shirts + pants)
     const allShirts = await fetchClothing('ClassicShirts');
     const allPants = await fetchClothing('ClassicPants');
+    const allSearchItems = [...allShirts, ...allPants];
     
-    // Combine and sort consistently by id
-    let allItems = allShirts.concat(allPants);
-    allItems.sort((a, b) => a.id - b.id);
+    console.log('Search items total:', allSearchItems.length);
 
-    console.log('Total items before pagination:', allItems.length);
-    if (allItems.length > 0) {
-      console.log('First item raw:', JSON.stringify(allItems[0]).slice(0, 500));
+    if (allSearchItems.length === 0) {
+      return NextResponse.json({ items: [], page, pageSize, totalItems: 0, totalPages: 0 });
     }
 
-    if (allItems.length === 0) {
-      return NextResponse.json({
-        items: [],
-        page,
-        pageSize,
-        totalItems: 0,
-        totalPages: 0,
-      });
+    // Step 2: Get details for all items
+    const assetIds = allSearchItems.map((item: any) => item.id);
+    const detailsMap = await getDetails(assetIds);
+    
+    console.log('Detail records total:', detailsMap.size);
+    const firstDetail = Array.from(detailsMap.values())[0];
+    console.log('Example detail:', firstDetail ? JSON.stringify(firstDetail).slice(0, 300) : 'none');
+
+    // Step 3: Filter to shirts/pants only (assetTypeId 11=Shirt, 12=Pants)
+    const clothingItems: any[] = [];
+    for (const [id, detail] of detailsMap) {
+      if (detail.assetTypeId === 11 || detail.assetTypeId === 12) {
+        clothingItems.push({ ...detail, searchItem: allSearchItems.find((s: any) => s.id === id) });
+      }
     }
 
-    // Get thumbnails
-    const assetIds = allItems.map((item: any) => String(item.id));
-    const thumbnails = await getThumbnails(assetIds);
+    // Step 4: Get thumbnails
+    const thumbnails = await getThumbnails(clothingItems.map((item: any) => String(item.id)));
     console.log('Thumbnails received:', Object.keys(thumbnails).length);
 
-    // Map to output format with proper price/description handling
-    const formattedItems = allItems.map((item: any) => {
-      // Price: check multiple fields in order of priority
+    // Step 5: Build final items
+    const formattedItems = clothingItems.map((item: any) => {
+      // Determine price
       let price: number | null = null;
-      
-      if (item.price !== undefined && typeof item.price === 'number' && item.price > 0) {
-        price = item.price;
-      } else if (item.priceInRobux !== undefined && typeof item.priceInRobux === 'number' && item.priceInRobux > 0) {
-        price = item.priceInRobux;
-      } else if (item.lowestPrice !== undefined && typeof item.lowestPrice === 'number' && item.lowestPrice > 0) {
-        price = item.lowestPrice;
+      if (item.price !== undefined && typeof item.price === 'number') {
+        price = item.price > 0 ? item.price : null;
+      } else if (item.priceInRobux !== undefined && typeof item.priceInRobux === 'number') {
+        price = item.priceInRobux > 0 ? item.priceInRobux : null;
       }
       
-      // Check if offsale - price should be null
+      // Offsale check
       if (item.isOffsale === true || item.purchasable === false) {
         price = null;
       }
 
-      // Description: use actual description or empty string
-      const description = (item.description && item.description.trim && item.description.trim().length > 0) 
-        ? item.description 
-        : '';
-
       return {
         id: item.id,
-        name: item.name || `Item ${item.id}`,
-        description: description,
+        name: item.name || '(Unnamed item)',
+        description: item.description || '',
         price: price,
         link: `https://www.roblox.com/catalog/${item.id}/`,
         icon: thumbnails[String(item.id)] || '',
       };
     });
 
-    // Calculate pagination AFTER all items are fetched
+    // Sort by ID for consistency
+    formattedItems.sort((a, b) => a.id - b.id);
+
+    console.log('Final items length:', formattedItems.length);
+    console.log('Example final item:', formattedItems[0] ? JSON.stringify(formattedItems[0]) : 'none');
+
+    // Step 6: Paginate
     const totalItems = formattedItems.length;
     const totalPages = Math.ceil(totalItems / pageSize);
     const start = (page - 1) * pageSize;
     const end = start + pageSize;
     const pagedItems = formattedItems.slice(start, end);
-
-    console.log('Example mapped item:', pagedItems[0] ? JSON.stringify(pagedItems[0]) : 'none');
 
     return NextResponse.json({
       items: pagedItems,
