@@ -19,13 +19,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <div className="flex-1 ml-[280px]">
-            <TopBar />
-            <main className="p-8">
-              {children}
-            </main>
+        <div className="min-h-screen p-8">
+          <div className="flex gap-8">
+            <div className="w-[280px] shrink-0">
+              <Sidebar />
+            </div>
+            <div className="flex-1">
+              <TopBar />
+              <main className="mt-8">
+                {children}
+              </main>
+            </div>
           </div>
         </div>
       </body>

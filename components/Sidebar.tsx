@@ -15,8 +15,8 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-[280px] bg-app-bg border-r border-border flex flex-col p-6 z-50">
-      <div className="mb-10">
+    <aside className="w-full bg-card-bg rounded-card p-6 flex flex-col">
+      <div className="mb-8">
         <div className="flex items-center gap-2 mb-1">
           <div className="w-8 h-8 bg-primary rounded-sm flex items-center justify-center">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -47,7 +47,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="bg-card-bg rounded-card p-3 flex items-center gap-3 mt-auto">
+      <div className="bg-app-bg rounded-card p-3 flex items-center gap-3 mt-auto">
         <div className="w-10 h-10 bg-[#3D9C4C] rounded-sm flex items-center justify-center text-white font-bold text-xs">
           BFL
         </div>
