@@ -76,7 +76,7 @@ export async function GET(request: Request) {
       global_name: user.global_name || user.username,
     };
 
-    const response = NextResponse.redirect(new URL('/?logged_in=true', request.url));
+    const response = NextResponse.redirect(new URL('/products?logged_in=true', request.url));
     
     response.cookies.set('discord_user', JSON.stringify(discordUser), {
       httpOnly: false,

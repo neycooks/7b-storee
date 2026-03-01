@@ -37,6 +37,7 @@ export default function Discover() {
   const [stats, setStats] = useState<GroupStats>({ members: 0, sales: 0, products: 0 });
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<DiscordUser | null>(null);
+  const [processed, setProcessed] = useState(false);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -58,20 +59,22 @@ export default function Discover() {
   }, []);
 
   useEffect(() => {
+    if (processed) return;
+    
     const isLoggedIn = searchParams.get('logged_in');
     
     if (isLoggedIn === 'true') {
-      // Wait for cookie to be set, then reload
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-      return;
+      // Clean URL without reload
+      const url = new URL(window.location.href);
+      url.searchParams.delete('logged_in');
+      window.history.replaceState({}, '', url.toString());
     }
 
     // Check for existing user
     const userData = getDiscordUser();
     setUser(userData);
-  }, [searchParams]);
+    setProcessed(true);
+  }, [searchParams, processed]);
 
   const displayName = user?.global_name || user?.username || 'Guest';
 
@@ -88,7 +91,12 @@ export default function Discover() {
           <p className="text-primary font-bold text-xl mt-4">5R$</p>
         </div>
 
-        <div className="col-span-2 bg-card-bg rounded-lg p-6 relative overflow-hidden">
+        <a 
+          href="https://www.roblox.com/communities/35515756/7B-STORE"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="col-span-2 bg-card-bg rounded-lg p-6 relative overflow-hidden hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
+        >
           <div className="absolute top-4 right-4 w-20 h-20 opacity-30">
             <img src="https://i.imgur.com/1kygngm.jpeg" alt="7B Store" className="w-full h-full object-contain rounded" />
           </div>
@@ -97,7 +105,7 @@ export default function Discover() {
           <p className="text-text-muted text-xs leading-relaxed">
             Welcome to 7B Store - Your official destination for premium Roblox items and accessories.
           </p>
-        </div>
+        </a>
       </div>
 
       <div>

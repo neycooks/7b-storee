@@ -6,6 +6,7 @@ import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 const pageNames: Record<string, string> = {
   '/': 'DISCOVER',
   '/products': 'PRODUCTS',
+  '/gamepass': 'GAMEPASS',
   '/policies': 'POLICIES',
   '/about': 'ABOUT US',
 };
@@ -41,11 +42,7 @@ export default function TopBar() {
   const title = pageNames[pathname] || 'DISCOVER';
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<DiscordUser | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [processed, setProcessed] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -57,21 +54,22 @@ export default function TopBar() {
   }, []);
 
   useEffect(() => {
-    // Check if redirected with logged_in param
+    if (processed) return;
+
     const isLoggedIn = searchParams.get('logged_in');
     
     if (isLoggedIn === 'true') {
-      // Wait a bit for cookie to be set, then reload
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-      return;
+      // Clean URL without reload
+      const url = new URL(window.location.href);
+      url.searchParams.delete('logged_in');
+      window.history.replaceState({}, '', url.toString());
     }
 
     // Check for existing user
     const userData = getDiscordUser();
     setUser(userData);
-  }, [searchParams]);
+    setProcessed(true);
+  }, [searchParams, processed]);
 
   const handleLogin = () => {
     window.location.href = '/api/auth/discord';
@@ -95,7 +93,7 @@ export default function TopBar() {
       <h1 className="text-white font-bold text-base tracking-[2px]">{title}</h1>
       
       <div className="flex items-center gap-3">
-        {mounted && user ? (
+        {processed && user ? (
           <>
             <span className="text-white font-bold text-base">{displayName}</span>
             <div className="w-10 h-10 rounded-full bg-card-bg flex items-center justify-center overflow-hidden">
