@@ -15,7 +15,7 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-full bg-card-bg rounded-card p-6 flex flex-col">
+    <aside className="w-full h-full bg-card-bg rounded-card p-6 flex flex-col">
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-1">
           <div className="w-8 h-8 bg-primary rounded-sm flex items-center justify-center">
@@ -47,7 +47,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="bg-app-bg rounded-card p-3 flex items-center gap-3 mt-auto">
+      <div className="bg-app-bg rounded-card p-3 flex items-center gap-3">
         <div className="w-10 h-10 bg-[#3D9C4C] rounded-sm flex items-center justify-center text-white font-bold text-xs">
           BFL
         </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
 const pageNames: Record<string, string> = {
@@ -12,9 +13,25 @@ const pageNames: Record<string, string> = {
 export default function TopBar() {
   const pathname = usePathname();
   const title = pageNames[pathname] || 'DISCOVER';
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <header className="sticky top-0 h-20 bg-app-bg/95 backdrop-blur-sm z-40 flex items-center justify-between px-8">
+    <header 
+      className={`sticky top-0 z-40 flex items-center justify-between px-6 py-4 transition-all duration-300 ${
+        scrolled 
+          ? 'bg-card-bg/95 backdrop-blur-sm rounded-card mt-4 mx-4 shadow-lg' 
+          : 'bg-transparent'
+      }`}
+    >
       <h1 className="text-white font-bold text-base tracking-[2px]">{title}</h1>
       
       <div className="flex items-center gap-3">

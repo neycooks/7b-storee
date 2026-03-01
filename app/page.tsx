@@ -1,27 +1,4 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import Intro from '@/components/Intro';
-
 export default function Discover() {
-  const [showIntro, setShowIntro] = useState(true);
-
-  useEffect(() => {
-    const hasSeenIntro = sessionStorage.getItem('hasSeenIntro');
-    if (hasSeenIntro) {
-      setShowIntro(false);
-    }
-  }, []);
-
-  const handleIntroComplete = () => {
-    sessionStorage.setItem('hasSeenIntro', 'true');
-    setShowIntro(false);
-  };
-
-  if (showIntro) {
-    return <Intro onComplete={handleIntroComplete} />;
-  }
-
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="grid grid-cols-5 gap-6">
