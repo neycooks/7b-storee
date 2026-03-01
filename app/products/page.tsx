@@ -76,29 +76,6 @@ export default function Products() {
   };
 
   const handlePurchase = async (product: RobloxItem) => {
-    const user = getDiscordUser();
-    
-    // Send webhook notification
-    if (user) {
-      try {
-        await fetch('/api/webhook/purchase', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user.id,
-            username: user.global_name || user.username,
-            avatar: user.avatar,
-            itemName: product.name,
-            itemPrice: product.price ? `${product.price}R$` : 'Free',
-            itemLink: product.link,
-            itemIcon: product.icon,
-          }),
-        });
-      } catch (e) {
-        console.error('Webhook error:', e);
-      }
-    }
-    
     window.open(product.link, '_blank');
   };
 
