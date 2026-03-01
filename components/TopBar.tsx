@@ -17,6 +17,23 @@ interface DiscordUser {
   global_name: string;
 }
 
+function getDiscordUser(): DiscordUser | null {
+  if (typeof document === 'undefined') return null;
+  
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'discord_user') {
+      try {
+        return JSON.parse(decodeURIComponent(value));
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
 export default function TopBar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -24,6 +41,11 @@ export default function TopBar() {
   const title = pageNames[pathname] || 'DISCOVER';
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<DiscordUser | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,28 +57,21 @@ export default function TopBar() {
   }, []);
 
   useEffect(() => {
-    const checkUser = () => {
-      const cookie = document.cookie.split('; ').find(row => row.startsWith('discord_user='));
-      if (cookie) {
-        try {
-          const userData = JSON.parse(cookie.split('=')[1]);
-          setUser(userData);
-        } catch (e) {
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
-    };
-
-    checkUser();
+    // Check if redirected with logged_in param
+    const isLoggedIn = searchParams.get('logged_in');
     
-    const params = searchParams;
-    if (params.get('logged_in') === 'true') {
-      checkUser();
-      router.replace('/', { scroll: false });
+    if (isLoggedIn === 'true') {
+      // Wait a bit for cookie to be set, then reload
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+      return;
     }
-  }, [searchParams, router]);
+
+    // Check for existing user
+    const userData = getDiscordUser();
+    setUser(userData);
+  }, [searchParams]);
 
   const handleLogin = () => {
     window.location.href = '/api/auth/discord';
@@ -80,7 +95,7 @@ export default function TopBar() {
       <h1 className="text-white font-bold text-base tracking-[2px]">{title}</h1>
       
       <div className="flex items-center gap-3">
-        {user ? (
+        {mounted && user ? (
           <>
             <span className="text-white font-bold text-base">{displayName}</span>
             <div className="w-10 h-10 rounded-full bg-card-bg flex items-center justify-center overflow-hidden">

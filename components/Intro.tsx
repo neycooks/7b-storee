@@ -2,20 +2,32 @@
 
 import { useState, useEffect } from 'react';
 
+function getDiscordUser(): any | null {
+  if (typeof document === 'undefined') return null;
+  
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'discord_user') {
+      try {
+        return JSON.parse(decodeURIComponent(value));
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
 export default function Intro() {
   const [showIntro, setShowIntro] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
   const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
-    const cookie = document.cookie.split('; ').find(row => row.startsWith('discord_user='));
-    if (cookie) {
-      try {
-        const userData = JSON.parse(cookie.split('=')[1]);
-        setUserName(userData.global_name || userData.username);
-      } catch (e) {
-        // ignore
-      }
+    const userData = getDiscordUser();
+    if (userData) {
+      setUserName(userData.global_name || userData.username);
     }
   }, []);
 

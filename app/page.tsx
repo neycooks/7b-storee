@@ -16,6 +16,23 @@ interface DiscordUser {
   global_name: string;
 }
 
+function getDiscordUser(): DiscordUser | null {
+  if (typeof document === 'undefined') return null;
+  
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'discord_user') {
+      try {
+        return JSON.parse(decodeURIComponent(value));
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
 export default function Discover() {
   const [stats, setStats] = useState<GroupStats>({ members: 0, sales: 0, products: 0 });
   const [loading, setLoading] = useState(true);
@@ -41,25 +58,19 @@ export default function Discover() {
   }, []);
 
   useEffect(() => {
-    const checkUser = () => {
-      const cookie = document.cookie.split('; ').find(row => row.startsWith('discord_user='));
-      if (cookie) {
-        try {
-          const userData = JSON.parse(cookie.split('=')[1]);
-          setUser(userData);
-        } catch (e) {
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
-    };
-
-    checkUser();
+    const isLoggedIn = searchParams.get('logged_in');
     
-    if (searchParams.get('logged_in') === 'true') {
-      checkUser();
+    if (isLoggedIn === 'true') {
+      // Wait for cookie to be set, then reload
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+      return;
     }
+
+    // Check for existing user
+    const userData = getDiscordUser();
+    setUser(userData);
   }, [searchParams]);
 
   const displayName = user?.global_name || user?.username || 'Guest';
