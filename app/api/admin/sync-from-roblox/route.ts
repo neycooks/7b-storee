@@ -2,6 +2,22 @@ import { NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import clothingData from '@/app/data/clothing.json';
 
+async function fetchThumbnail(assetId: number): Promise<string | null> {
+  try {
+    const url = `https://thumbnails.roblox.com/v1/assets?assetIds=${assetId}&returnPolicy=PlaceHolder&size=150x150&format=Png&aspectRatio=1x1`;
+    const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.data && data.data[0]?.imageUrl) {
+        return data.data[0].imageUrl;
+      }
+    }
+  } catch (e) {
+    console.error('[Sync] Thumbnail fetch error:', e);
+  }
+  return null;
+}
+
 export async function GET(req: Request) {
   try {
     const url = new URL('/api/group-kits', req.url);
@@ -41,9 +57,13 @@ export async function GET(req: Request) {
       const robloxId = item.id;
       const name = item.name;
       const price = item.price ?? null;
-      const thumbnailUrl = item.thumbnailUrl || item.thumbnail_url || item.icon || null;
+      let thumbnailUrl = item.thumbnailUrl || item.thumbnail_url || item.icon || null;
       const link = item.link || `https://www.roblox.com/catalog/${robloxId}`;
       const type = 'item';
+
+      if (!thumbnailUrl) {
+        thumbnailUrl = await fetchThumbnail(robloxId);
+      }
 
       await sql`
         INSERT INTO shop_items (roblox_id, name, price, thumbnail_url, link, type)

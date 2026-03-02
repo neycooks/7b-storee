@@ -28,14 +28,14 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { type, robloxId, name, price, link } = body;
+    const { type, robloxId, name, price, iconUrl, link } = body;
 
-    let thumbnailUrl = null;
+    let thumbnailUrl = iconUrl || null;
     let itemName = name;
     let itemPrice = price;
     let itemLink = link;
 
-    if (!itemName || !thumbnailUrl) {
+    if (!thumbnailUrl) {
       try {
         const thumbnailUrlFetch = `https://thumbnails.roblox.com/v1/assets?assetIds=${robloxId}&returnPolicy=PlaceHolder&size=150x150&format=Png&aspectRatio=1x1`;
         const thumbRes = await fetch(thumbnailUrlFetch, { headers: { 'User-Agent': 'Mozilla/5.0' } });
