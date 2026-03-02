@@ -8,17 +8,28 @@ type GroupKitItem = {
   thumbnailUrl: string | null;
 };
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const url = 'https://catalog.roblox.com/v1/search/items/details?' +
-      new URLSearchParams({
-        Category: '3',
-        CreatorType: '2',
-        CreatorTargetId: '35515756',
-        IncludeNotForSale: 'true',
-        Limit: '30',
-        SortType: '3',
-      });
+    const { searchParams } = new URL(request.url);
+    const limitParam = searchParams.get('limit');
+    const cursor = searchParams.get('cursor');
+
+    const limit = Math.min(parseInt(limitParam || '30', 10) || 30, 100);
+    
+    const params: Record<string, string> = {
+      Category: '3',
+      CreatorType: '2',
+      CreatorTargetId: '35515756',
+      IncludeNotForSale: 'true',
+      Limit: limit.toString(),
+      SortType: '3',
+    };
+
+    if (cursor) {
+      params.Cursor = cursor;
+    }
+
+    const url = 'https://catalog.roblox.com/v1/search/items/details?' + new URLSearchParams(params);
 
     const response = await fetch(url, {
       cache: 'no-store',
@@ -65,7 +76,11 @@ export async function GET() {
     });
 
     return NextResponse.json(
-      { ok: true, items: simplifiedItems },
+      { 
+        ok: true, 
+        items: simplifiedItems,
+        nextCursor: data.nextPageCursor ?? null,
+      },
       { status: 200 }
     );
   } catch (error) {
