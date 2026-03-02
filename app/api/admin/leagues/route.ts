@@ -18,14 +18,16 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, iconUrl, joinLink } = body;
 
-    if (body.id) {
+      if (body.id) {
       await sql`
         UPDATE leagues SET name = ${name}, icon_url = ${iconUrl}, join_link = ${joinLink} WHERE id = ${body.id}
       `;
     } else {
-      await sql`
-        INSERT INTO leagues (name, icon_url, join_link) VALUES (${name}, ${iconUrl}, ${joinLink})
+      const result = await sql`
+        INSERT INTO leagues (name, icon_url, join_link) VALUES (${name}, ${iconUrl || null}, ${joinLink || null})
+        RETURNING id, name
       `;
+      console.log('[Leagues] Created:', result);
     }
 
     return NextResponse.json({ ok: true });

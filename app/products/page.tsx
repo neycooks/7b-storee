@@ -90,6 +90,7 @@ export default function Products() {
     try {
       const res = await fetch('/api/leagues');
       const data = await res.json();
+      console.log('[Products] Leagues data:', data);
       setLeagues(data.leagues || []);
     } catch (e) {
       console.error('Failed to fetch leagues:', e);
