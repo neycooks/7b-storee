@@ -65,13 +65,6 @@ export default function About() {
   }, [mounted, showLogin, showAdmin]);
 
   useEffect(() => {
-    if (isAuthenticated && showLogin) {
-      setShowLogin(false);
-      setShowAdmin(true);
-    }
-  }, [isAuthenticated, showLogin]);
-
-  useEffect(() => {
     if (isAuthenticated && showAdmin) {
       fetchItems();
     }
@@ -81,9 +74,6 @@ export default function About() {
     const res = await fetch('/api/admin/me');
     const data = await res.json();
     setIsAuthenticated(data.authenticated);
-    if (data.authenticated && !showLogin) {
-      setShowAdmin(true);
-    }
   };
 
   const handleLogin = async () => {
@@ -95,9 +85,11 @@ export default function About() {
     });
     const data = await res.json();
     if (data.ok) {
+      setShowLogin(false);
+      setShowAdmin(true);
       setIsAuthenticated(true);
     } else {
-      setLoginError('Invalid password');
+      setLoginError('Incorrect password');
     }
   };
 
@@ -198,25 +190,26 @@ export default function About() {
       {showLogin && (
         <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4" onClick={() => setShowLogin(false)}>
           <div className="bg-card-bg rounded-2xl p-8 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-white font-bold text-xl">Admin Login</h2>
-              <button onClick={() => setShowLogin(false)} className="text-text-muted hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Enter password"
-              className="w-full bg-app-bg border border-border rounded-xl px-4 py-3 text-white placeholder-text-muted focus:outline-none focus:border-primary mb-4"
-              onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            />
-            {loginError && <p className="text-red-400 text-sm mb-4">{loginError}</p>}
-            <div className="flex gap-3">
-              <button onClick={handleLogin} className="flex-1 bg-primary text-black font-bold py-3 rounded-xl hover:opacity-90 transition">Submit</button>
-              <button onClick={() => setShowLogin(false)} className="px-6 py-3 bg-app-bg text-text-muted font-medium rounded-xl hover:bg-border transition">Cancel</button>
-            </div>
+            <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-white font-bold text-xl">Admin Login</h2>
+                <button type="button" onClick={() => setShowLogin(false)} className="text-text-muted hover:text-white">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Enter password"
+                className="w-full bg-app-bg border border-border rounded-xl px-4 py-3 text-white placeholder-text-muted focus:outline-none focus:border-primary mb-4"
+              />
+              {loginError && <p className="text-red-400 text-sm mb-4">{loginError}</p>}
+              <div className="flex gap-3">
+                <button type="submit" className="flex-1 bg-primary text-black font-bold py-3 rounded-xl hover:opacity-90 transition">Submit</button>
+                <button type="button" onClick={() => setShowLogin(false)} className="px-6 py-3 bg-app-bg text-text-muted font-medium rounded-xl hover:bg-border transition">Cancel</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
