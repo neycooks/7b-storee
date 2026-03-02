@@ -59,10 +59,10 @@ export default function About() {
   }, []);
 
   useEffect(() => {
-    if (mounted && (showLogin || showAdmin)) {
+    if (mounted && showAdmin) {
       checkAuth();
     }
-  }, [mounted, showLogin, showAdmin]);
+  }, [mounted, showAdmin]);
 
   useEffect(() => {
     if (isAuthenticated && showAdmin) {
@@ -74,6 +74,10 @@ export default function About() {
     const res = await fetch('/api/admin/me');
     const data = await res.json();
     setIsAuthenticated(data.authenticated);
+  };
+
+  const handleOpenLogin = () => {
+    setShowLogin(true);
   };
 
   const handleLogin = async () => {
@@ -182,12 +186,12 @@ export default function About() {
       </div>
 
       <div className="mt-8 text-center">
-        <p className="text-text-muted text-sm">Owned by <span onClick={() => { setShowLogin(true); }} className="text-white font-bold cursor-pointer">Alonso</span></p>
+        <p className="text-text-muted text-sm">Owned by <span onClick={handleOpenLogin} className="text-white font-bold cursor-pointer">Alonso</span></p>
         <p className="text-text-muted text-sm mt-1">Site made by <span className="text-white font-bold">ney</span></p>
       </div>
 
       {/* Login Modal */}
-      {showLogin && (
+      {mounted && showLogin && (
         <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4" onClick={() => setShowLogin(false)}>
           <div className="bg-card-bg rounded-2xl p-8 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
@@ -215,7 +219,7 @@ export default function About() {
       )}
 
       {/* Admin Panel Modal */}
-      {showAdmin && isAuthenticated && (
+      {mounted && showAdmin && isAuthenticated && (
         <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4" onClick={() => setShowAdmin(false)}>
           <div className="bg-card-bg rounded-2xl w-full max-w-5xl max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
