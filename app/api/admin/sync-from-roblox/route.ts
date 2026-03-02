@@ -70,7 +70,21 @@ export async function GET(req: Request) {
         (typeof item.assetType === 'string' && item.assetType) ||
         '';
 
-      const normalizedType = normalizeShopItemType(rawTypeSource);
+      let normalizedType = normalizeShopItemType(rawTypeSource);
+
+      if (
+        normalizedType !== 'item' &&
+        normalizedType !== 'gamepass' &&
+        normalizedType !== 'shirt' &&
+        normalizedType !== 'pants'
+      ) {
+        console.warn('[Sync] Forcing fallback type for item', {
+          id: robloxId,
+          rawType: rawTypeSource,
+          normalizedType,
+        });
+        normalizedType = 'item';
+      }
 
       console.log('[Sync] Processing item BEFORE INSERT:', {
         id: robloxId,
@@ -82,28 +96,17 @@ export async function GET(req: Request) {
         thumbnailUrl = await fetchThumbnail(robloxId);
       }
 
-      try {
-        await sql`
-          INSERT INTO shop_items (roblox_id, name, price, thumbnail_url, link, type)
-          VALUES (${robloxId}, ${name}, ${price}, ${thumbnailUrl}, ${link}, ${normalizedType})
-          ON CONFLICT (roblox_id) DO UPDATE SET
-            name = EXCLUDED.name,
-            price = EXCLUDED.price,
-            thumbnail_url = EXCLUDED.thumbnail_url,
-            link = EXCLUDED.link,
-            type = EXCLUDED.type;
-        `;
-        console.log('[Sync] INSERT OK for item', robloxId);
-        synced++;
-      } catch (e: any) {
-        console.error('[Sync] INSERT FAILED for item', {
-          id: robloxId,
-          rawType: rawTypeSource,
-          normalizedType,
-          error: e?.message ?? String(e),
-        });
-        throw e;
-      }
+      await sql`
+        INSERT INTO shop_items (roblox_id, name, price, thumbnail_url, link, type)
+        VALUES (${robloxId}, ${name}, ${price}, ${thumbnailUrl}, ${link}, ${normalizedType})
+        ON CONFLICT (roblox_id) DO UPDATE SET
+          name = EXCLUDED.name,
+          price = EXCLUDED.price,
+          thumbnail_url = EXCLUDED.thumbnail_url,
+          link = EXCLUDED.link,
+          type = EXCLUDED.type;
+      `;
+      synced++;
     }
 
     return NextResponse.json({ ok: true, source, syncedCount: synced });
