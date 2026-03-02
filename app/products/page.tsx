@@ -83,6 +83,12 @@ export default function Products() {
     } else {
       fetchLeagues();
     }
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (viewMode === 'group') {
+      fetchProducts(page);
+    }
   }, [viewMode, page]);
 
   const fetchLeagues = async () => {
@@ -272,7 +278,7 @@ export default function Products() {
                     <div
                       key={league.id}
                       onClick={() => handleLeagueClick(league)}
-                      className="bg-card-bg rounded-xl p-4 cursor-pointer hover:ring-2 ring-primary transition"
+                      className="bg-card-bg rounded-xl p-4 cursor-pointer hover:ring-2 ring-primary transition-all hover:scale-105 animate-fade-in"
                     >
                       {league.icon_url ? (
                         <img src={league.icon_url} alt={league.name} className="w-20 h-20 object-cover rounded-lg mx-auto mb-3" />
@@ -281,7 +287,18 @@ export default function Products() {
                           <Trophy className="text-text-muted" size={32} />
                         </div>
                       )}
-                      <h3 className="text-white font-bold text-center">{league.name}</h3>
+                      <h3 className="text-white font-bold text-center mb-2">{league.name}</h3>
+                      {league.join_link && (
+                        <a
+                          href={league.join_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-block px-4 py-1.5 bg-primary text-black text-sm font-bold rounded-full hover:opacity-90 transition"
+                        >
+                          Join Server
+                        </a>
+                      )}
                     </div>
                   ))}
                 </div>
