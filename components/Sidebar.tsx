@@ -6,7 +6,7 @@ import { LayoutGrid, ShoppingBag, FileText, Info, Star } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Discover', icon: LayoutGrid },
-  { href: '/products', label: 'Products', icon: ShoppingBag },
+  { href: '/products', label: 'Marketplace', icon: ShoppingBag },
   { href: '/gamepass', label: 'Gamepass', icon: Star },
   { href: '/policies', label: 'Policies', icon: FileText },
   { href: '/about', label: 'About Us', icon: Info },

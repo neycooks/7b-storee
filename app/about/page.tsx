@@ -39,26 +39,77 @@ interface ShopItem {
   type: string;
 }
 
+interface League {
+  id: number;
+  name: string;
+  icon_url: string;
+  join_link: string;
+}
+
+interface Team {
+  id: number;
+  league_id: number;
+  name: string;
+  logo_url: string;
+}
+
+interface TeamKit {
+  id: number;
+  team_id: number;
+  name: string;
+  roblox_id: number;
+  price: number;
+  thumbnail_url: string;
+  link: string;
+}
+
 export default function About() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [showLogin, setShowLogin] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
-  const [activeTab, setActiveTab] = useState<'clothing' | 'gamepasses'>('clothing');
+  const [activeTab, setActiveTab] = useState<'clothing' | 'gamepasses' | 'leagues'>('clothing');
+  const [leagueSubTab, setLeagueSubTab] = useState<'league' | 'teams' | 'merch'>('league');
   const [clothingItems, setClothingItems] = useState<ShopItem[]>([]);
   const [gamepassItems, setGamepassItems] = useState<ShopItem[]>([]);
+  const [leagues, setLeagues] = useState<League[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [teamKits, setTeamKits] = useState<TeamKit[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [newItem, setNewItem] = useState({ robloxId: '', name: '', price: '', iconUrl: '' });
   const [editingItem, setEditingItem] = useState<ShopItem | null>(null);
   const [editForm, setEditForm] = useState({ robloxId: '', name: '', price: '', iconUrl: '', link: '' });
   const [loading, setLoading] = useState(false);
+  const [newLeague, setNewLeague] = useState({ name: '', iconUrl: '', joinLink: '' });
+  const [newTeam, setNewTeam] = useState({ leagueId: 0, name: '', logoUrl: '', teamCount: '1' });
+  const [editingLeague, setEditingLeague] = useState<League | null>(null);
+  const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [newKit, setNewKit] = useState({ name: '', robloxId: '', price: '', thumbnailUrl: '', link: '' });
 
   useEffect(() => {
     if (showAdmin) {
       fetchItems();
     }
-  }, [showAdmin]);
+  }, [showAdmin, activeTab]);
+
+  useEffect(() => {
+    if (showAdmin && activeTab === 'leagues') {
+      fetchLeagues();
+    }
+  }, [showAdmin, activeTab]);
+
+  useEffect(() => {
+    if (showAdmin && activeTab === 'leagues' && leagueSubTab === 'teams' && selectedLeague) {
+      fetchTeams(selectedLeague.id);
+    }
+  }, [showAdmin, activeTab, leagueSubTab, selectedLeague]);
+
+  useEffect(() => {
+    if (showAdmin && activeTab === 'leagues' && leagueSubTab === 'merch' && selectedTeam) {
+      fetchTeamKits(selectedTeam.id);
+    }
+  }, [showAdmin, activeTab, leagueSubTab, selectedTeam]);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -76,20 +127,35 @@ export default function About() {
     setLoading(false);
   };
 
+  const fetchLeagues = async () => {
+    const res = await fetch('/api/admin/leagues');
+    const data = await res.json();
+    setLeagues(data.leagues || []);
+  };
+
+  const fetchTeams = async (leagueId: number) => {
+    const res = await fetch(`/api/admin/teams?leagueId=${leagueId}`);
+    const data = await res.json();
+    setTeams(data.teams || []);
+  };
+
+  const fetchTeamKits = async (teamId: number) => {
+    const res = await fetch(`/api/admin/team-kits?teamId=${teamId}`);
+    const data = await res.json();
+    setTeamKits(data.kits || []);
+  };
+
   const handleDelete = async (id: number) => {
-    if (!confirm('Delete this item? This will remove it from the shop.')) return;
-    
+    if (!confirm('Delete this item?')) return;
     const res = await fetch(`/api/admin/shop-items?id=${id}`, { method: 'DELETE' });
     if (res.ok) {
       setClothingItems(prev => prev.filter(item => item.id !== id));
       setGamepassItems(prev => prev.filter(item => item.id !== id));
-    } else {
-      alert('Failed to delete item');
     }
   };
 
   const handleCreate = async () => {
-    let robloxId = newItem.robloxId;
+    let robloxId = editForm.robloxId;
     if (robloxId.includes('roblox.com')) {
       const match = robloxId.match(/\/(\d+)/);
       if (match) robloxId = match[1];
@@ -98,140 +164,148 @@ export default function About() {
       alert('Please enter a valid Roblox ID');
       return;
     }
-
     const type = activeTab === 'clothing' ? 'item' : 'gamepass';
-    
     const res = await fetch('/api/admin/shop-items', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type,
-        robloxId: parseInt(robloxId),
-        name: newItem.name || null,
-        price: newItem.price ? parseInt(newItem.price) : null,
-        iconUrl: newItem.iconUrl || null,
+        type, robloxId: parseInt(robloxId), name: editForm.name || null, price: editForm.price ? parseInt(editForm.price) : null, iconUrl: editForm.iconUrl || null,
       }),
     });
-
     if (res.ok) {
       setShowCreateForm(false);
-      setNewItem({ robloxId: '', name: '', price: '', iconUrl: '' });
-      await fetchItems();
-    } else {
-      alert('Failed to create item');
+      setEditForm({ robloxId: '', name: '', price: '', iconUrl: '', link: '' });
+      fetchItems();
     }
   };
 
   const handleEdit = (item: ShopItem) => {
     setEditingItem(item);
-    setEditForm({
-      robloxId: item.roblox_id.toString(),
-      name: item.name || '',
-      price: item.price?.toString() || '',
-      iconUrl: item.thumbnail_url || '',
-      link: item.link || '',
-    });
+    setEditForm({ robloxId: item.roblox_id.toString(), name: item.name || '', price: item.price?.toString() || '', iconUrl: item.thumbnail_url || '', link: item.link || '' });
   };
 
   const handleSaveEdit = async () => {
     if (!editingItem) return;
-
     const type = activeTab === 'clothing' ? 'item' : 'gamepass';
-    
     const res = await fetch('/api/admin/shop-items', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        id: editingItem.id,
-        type,
-        robloxId: parseInt(editForm.robloxId) || editingItem.roblox_id,
-        name: editForm.name || null,
-        price: editForm.price ? parseInt(editForm.price) : null,
-        iconUrl: editForm.iconUrl || null,
-        link: editForm.link || null,
+        id: editingItem.id, type, robloxId: parseInt(editForm.robloxId) || editingItem.roblox_id, name: editForm.name || null, price: editForm.price ? parseInt(editForm.price) : null, iconUrl: editForm.iconUrl || null, link: editForm.link || null,
       }),
     });
-
     if (res.ok) {
       setEditingItem(null);
-      await fetchItems();
-    } else {
-      alert('Failed to update item');
+      fetchItems();
     }
+  };
+
+  const handleSaveLeague = async () => {
+    if (!newLeague.name) { alert('Please enter a league name'); return; }
+    const res = await fetch('/api/admin/leagues', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: editingLeague?.id, name: newLeague.name, iconUrl: newLeague.iconUrl, joinLink: newLeague.joinLink,
+      }),
+    });
+    if (res.ok) {
+      setNewLeague({ name: '', iconUrl: '', joinLink: '' });
+      setEditingLeague(null);
+      fetchLeagues();
+    }
+  };
+
+  const handleDeleteLeague = async (id: number) => {
+    if (!confirm('Delete this league and all its teams?')) return;
+    await fetch(`/api/admin/leagues?id=${id}`, { method: 'DELETE' });
+    fetchLeagues();
+  };
+
+  const handleSaveTeam = async () => {
+    if (!newTeam.name || !selectedLeague) { alert('Please enter team name'); return; }
+    const res = await fetch('/api/admin/teams', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leagueId: selectedLeague.id, name: newTeam.name, logoUrl: newTeam.logoUrl }),
+    });
+    if (res.ok) {
+      setNewTeam({ leagueId: 0, name: '', logoUrl: '', teamCount: '1' });
+      fetchTeams(selectedLeague.id);
+    }
+  };
+
+  const handleDeleteTeam = async (id: number) => {
+    if (!confirm('Delete this team?')) return;
+    await fetch(`/api/admin/teams?id=${id}`, { method: 'DELETE' });
+    if (selectedLeague) fetchTeams(selectedLeague.id);
+  };
+
+  const handleSaveKit = async () => {
+    if (!newKit.name || !selectedTeam) { alert('Please enter kit name'); return; }
+    let robloxId = newKit.robloxId;
+    if (robloxId.includes('roblox.com')) {
+      const match = robloxId.match(/\/(\d+)/);
+      if (match) robloxId = match[1];
+    }
+    const res = await fetch('/api/admin/team-kits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        teamId: selectedTeam.id, name: newKit.name, robloxId: robloxId ? parseInt(robloxId) : null, price: newKit.price ? parseInt(newKit.price) : null, thumbnailUrl: newKit.thumbnailUrl, link: newKit.link || `https://www.roblox.com/catalog/${robloxId}`,
+      }),
+    });
+    if (res.ok) {
+      setNewKit({ name: '', robloxId: '', price: '', thumbnailUrl: '', link: '' });
+      fetchTeamKits(selectedTeam.id);
+    }
+  };
+
+  const handleDeleteKit = async (id: number) => {
+    if (!confirm('Delete this kit?')) return;
+    await fetch(`/api/admin/team-kits?id=${id}`, { method: 'DELETE' });
+    if (selectedTeam) fetchTeamKits(selectedTeam.id);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
-    
-    const res = await fetch('/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    });
-    
-    if (res.ok) {
-      setShowLogin(false);
-      setShowAdmin(true);
-      setPassword('');
-    } else {
-      setLoginError('Incorrect password');
-    }
+    const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+    if (res.ok) { setShowLogin(false); setShowAdmin(true); setPassword(''); }
+    else { setLoginError('Incorrect password'); }
   };
 
-  const handleOpenLogin = () => {
-    setShowLogin(true);
-  };
-
-  const items = activeTab === 'clothing' ? clothingItems : gamepassItems;
+  const items = activeTab === 'clothing' ? clothingItems : activeTab === 'gamepasses' ? gamepassItems : [];
 
   return (
     <div className="animate-fade-in">
       <h1 className="text-white font-bold text-2xl mb-6">ABOUT US</h1>
-      
       <div className="grid grid-cols-2 gap-4">
         {aboutInfo.map((info, index) => (
-          <div
-            key={index}
-            onClick={() => setActiveIndex(index)}
-            className={`bg-card-bg rounded-card p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] ${
-              activeIndex === index ? 'ring-2 ring-primary' : ''
-            }`}
-          >
+          <div key={index} onClick={() => setActiveIndex(index)} className={`bg-card-bg rounded-card p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] ${activeIndex === index ? 'ring-2 ring-primary' : ''}`}>
             <h3 className="text-white font-bold text-lg mb-2">{info.title}</h3>
             <p className="text-text-muted text-sm">{info.description}</p>
           </div>
         ))}
       </div>
-
       <div className="mt-8 bg-card-bg rounded-card p-6 animate-fade-in-up" key={activeIndex}>
         <h3 className="text-white font-bold text-xl mb-3">{aboutInfo[activeIndex].title}</h3>
         <p className="text-text-muted text-sm leading-relaxed">{aboutInfo[activeIndex].description}</p>
       </div>
-
       <div className="mt-8 text-center">
-        <p className="text-text-muted text-sm">Owned by <span onClick={handleOpenLogin} className="text-white font-bold cursor-pointer">Alonso</span></p>
+        <p className="text-text-muted text-sm">Owned by <span onClick={() => setShowLogin(true)} className="text-white font-bold cursor-pointer">Alonso</span></p>
         <p className="text-text-muted text-sm mt-1">Site made by <span className="text-white font-bold">ney</span></p>
       </div>
 
-      {/* Login Modal */}
       {showLogin && (
         <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4" onClick={() => setShowLogin(false)}>
           <div className="bg-card-bg rounded-2xl p-8 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <form onSubmit={handleLogin}>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-white font-bold text-xl">Admin Login</h2>
-                <button type="button" onClick={() => setShowLogin(false)} className="text-text-muted hover:text-white">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
+                <button type="button" onClick={() => setShowLogin(false)} className="text-text-muted hover:text-white">✕</button>
               </div>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Enter password"
-                className="w-full bg-app-bg border border-border rounded-xl px-4 py-3 text-white placeholder-text-muted focus:outline-none focus:border-primary mb-4"
-              />
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter password" className="w-full bg-app-bg border border-border rounded-xl px-4 py-3 text-white placeholder-text-muted focus:outline-none focus:border-primary mb-4" />
               {loginError && <p className="text-red-400 text-sm mb-4">{loginError}</p>}
               <div className="flex gap-3">
                 <button type="submit" className="flex-1 bg-primary text-black font-bold py-3 rounded-xl hover:opacity-90 transition">Submit</button>
@@ -242,189 +316,191 @@ export default function About() {
         </div>
       )}
 
-      {/* Admin Panel Modal */}
       {showAdmin && (
         <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4" onClick={() => setShowAdmin(false)}>
-          <div className="bg-card-bg rounded-2xl w-full max-w-5xl max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
+          <div className="bg-card-bg rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center p-6 border-b border-border">
               <h2 className="text-white font-bold text-xl">Admin Panel</h2>
-              <button onClick={() => setShowAdmin(false)} className="text-text-muted hover:text-white p-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
+              <button onClick={() => setShowAdmin(false)} className="text-text-muted hover:text-white p-2">✕</button>
             </div>
 
-            {/* Tabs */}
-            <div className="flex gap-4 p-6 pb-0">
-              <button
-                onClick={() => setActiveTab('clothing')}
-                className={`px-6 py-3 rounded-xl font-bold transition ${
-                  activeTab === 'clothing' 
-                    ? 'bg-primary text-black' 
-                    : 'bg-app-bg text-text-muted hover:text-white'
-                }`}
-              >
-                Clothing
-              </button>
-              <button
-                onClick={() => setActiveTab('gamepasses')}
-                className={`px-6 py-3 rounded-xl font-bold transition ${
-                  activeTab === 'gamepasses' 
-                    ? 'bg-primary text-black' 
-                    : 'bg-app-bg text-text-muted hover:text-white'
-                }`}
-              >
-                Gamepasses
-              </button>
-              <div className="flex-1"></div>
-              <button
-                onClick={() => setShowCreateForm(true)}
-                className="px-6 py-3 bg-primary text-black rounded-xl font-bold hover:opacity-90 transition"
-              >
-                + Create
-              </button>
+            <div className="flex gap-4 p-6 pt-0">
+              <button onClick={() => { setActiveTab('clothing'); setSelectedLeague(null); setSelectedTeam(null); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'clothing' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Clothing</button>
+              <button onClick={() => { setActiveTab('gamepasses'); setSelectedLeague(null); setSelectedTeam(null); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'gamepasses' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Gamepasses</button>
+              <button onClick={() => { setActiveTab('leagues'); setLeagueSubTab('league'); setSelectedLeague(null); setSelectedTeam(null); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'leagues' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Leagues</button>
             </div>
 
-            {/* Create Form */}
-            {showCreateForm && (
-              <div className="p-6 pb-0">
+            {activeTab !== 'leagues' && (
+              <div className="flex gap-4 px-6 pb-0">
+                <button onClick={() => setShowCreateForm(true)} className="px-6 py-3 bg-primary text-black rounded-xl font-bold hover:opacity-90 transition">+ Create</button>
+              </div>
+            )}
+
+            {activeTab === 'leagues' && (
+              <div className="flex gap-2 px-6 pb-0">
+                <button onClick={() => { setLeagueSubTab('league'); setSelectedLeague(null); setSelectedTeam(null); }} className={`px-4 py-2 rounded-lg font-bold text-sm ${leagueSubTab === 'league' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted'}`}>Leagues</button>
+                <button onClick={() => { setLeagueSubTab('teams'); setSelectedTeam(null); }} className={`px-4 py-2 rounded-lg font-bold text-sm ${leagueSubTab === 'teams' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted'}`}>Teams</button>
+                <button onClick={() => setLeagueSubTab('merch')} className={`px-4 py-2 rounded-lg font-bold text-sm ${leagueSubTab === 'merch' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted'}`}>Merch</button>
+              </div>
+            )}
+
+            {(showCreateForm || editingItem) && activeTab !== 'leagues' && (
+              <div className="p-6 pt-4">
                 <div className="bg-app-bg rounded-xl p-4 mb-4">
-                  <h3 className="text-white font-bold mb-3">Create New {activeTab === 'clothing' ? 'Clothing' : 'Gamepass'}</h3>
+                  <h3 className="text-white font-bold mb-3">{editingItem ? 'Edit Item' : 'Create New'}</h3>
                   <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="text"
-                      placeholder="Roblox ID or Link (required)"
-                      value={newItem.robloxId}
-                      onChange={e => setNewItem({...newItem, robloxId: e.target.value})}
-                      className="col-span-2 bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Name"
-                      value={newItem.name}
-                      onChange={e => setNewItem({...newItem, name: e.target.value})}
-                      className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Price (R$)"
-                      value={newItem.price}
-                      onChange={e => setNewItem({...newItem, price: e.target.value})}
-                      className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Icon URL (optional)"
-                      value={newItem.iconUrl}
-                      onChange={e => setNewItem({...newItem, iconUrl: e.target.value})}
-                      className="col-span-2 bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
-                    />
+                    <input type="text" placeholder="Roblox ID" value={editForm.robloxId} onChange={e => setEditForm({...editForm, robloxId: e.target.value})} className="col-span-2 bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
+                    <input type="text" placeholder="Name" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
+                    <input type="text" placeholder="Price (R$)" value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
+                    <input type="text" placeholder="Link" value={editForm.link} onChange={e => setEditForm({...editForm, link: e.target.value})} className="col-span-2 bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
+                    <input type="text" placeholder="Icon URL" value={editForm.iconUrl} onChange={e => setEditForm({...editForm, iconUrl: e.target.value})} className="col-span-2 bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
                   </div>
                   <div className="flex gap-2 mt-3">
-                    <button onClick={handleCreate} className="px-4 py-2 bg-primary text-black rounded-lg font-bold text-sm hover:opacity-90 transition">Add</button>
-                    <button onClick={() => setShowCreateForm(false)} className="px-4 py-2 bg-app-bg text-text-muted rounded-lg font-medium text-sm hover:text-white transition">Cancel</button>
+                    <button onClick={editingItem ? handleSaveEdit : handleCreate} className="px-4 py-2 bg-primary text-black rounded-lg font-bold text-sm">{editingItem ? 'Save' : 'Add'}</button>
+                    <button onClick={() => { setShowCreateForm(false); setEditingItem(null); }} className="px-4 py-2 bg-app-bg text-text-muted rounded-lg font-medium text-sm">Cancel</button>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Edit Form */}
-            {editingItem && (
-              <div className="p-6 pb-0">
-                <div className="bg-app-bg rounded-xl p-4 mb-4">
-                  <h3 className="text-white font-bold mb-3">Edit Item</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="text"
-                      placeholder="Roblox ID"
-                      value={editForm.robloxId}
-                      onChange={e => setEditForm({...editForm, robloxId: e.target.value})}
-                      className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Name"
-                      value={editForm.name}
-                      onChange={e => setEditForm({...editForm, name: e.target.value})}
-                      className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Price (R$)"
-                      value={editForm.price}
-                      onChange={e => setEditForm({...editForm, price: e.target.value})}
-                      className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Link"
-                      value={editForm.link}
-                      onChange={e => setEditForm({...editForm, link: e.target.value})}
-                      className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Icon URL"
-                      value={editForm.iconUrl}
-                      onChange={e => setEditForm({...editForm, iconUrl: e.target.value})}
-                      className="col-span-2 bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
-                    />
-                  </div>
-                  <div className="flex gap-2 mt-3">
-                    <button onClick={handleSaveEdit} className="px-4 py-2 bg-primary text-black rounded-lg font-bold text-sm hover:opacity-90 transition">Save</button>
-                    <button onClick={() => setEditingItem(null)} className="px-4 py-2 bg-app-bg text-text-muted rounded-lg font-medium text-sm hover:text-white transition">Cancel</button>
-                  </div>
+            {activeTab === 'leagues' && leagueSubTab === 'league' && (
+              <div className="p-6">
+                <div className="flex gap-4 mb-4">
+                  <button onClick={() => setShowCreateForm(true)} className="px-6 py-3 bg-primary text-black rounded-xl font-bold hover:opacity-90 transition">+ Create League</button>
                 </div>
-              </div>
-            )}
-
-            {/* Items Grid */}
-            <div className="flex-1 overflow-auto p-6">
-              {loading ? (
-                <div className="text-center text-text-muted py-8">Loading...</div>
-              ) : items.length === 0 ? (
-                <div className="text-center text-text-muted py-8">No {activeTab} found</div>
-              ) : (
+                {showCreateForm && (
+                  <div className="bg-app-bg rounded-xl p-4 mb-4">
+                    <h3 className="text-white font-bold mb-3">Create League</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input type="text" placeholder="League Name" value={newLeague.name} onChange={e => setNewLeague({...newLeague, name: e.target.value})} className="col-span-2 bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
+                      <input type="text" placeholder="Icon URL" value={newLeague.iconUrl} onChange={e => setNewLeague({...newLeague, iconUrl: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
+                      <input type="text" placeholder="Join Link" value={newLeague.joinLink} onChange={e => setNewLeague({...newLeague, joinLink: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <button onClick={handleSaveLeague} className="px-4 py-2 bg-primary text-black rounded-lg font-bold text-sm">Save</button>
+                      <button onClick={() => setShowCreateForm(false)} className="px-4 py-2 bg-app-bg text-text-muted rounded-lg font-medium text-sm">Cancel</button>
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-4 gap-4">
-                  {items.map(item => (
-                    <div key={item.id} className="bg-app-bg rounded-xl overflow-hidden hover:ring-2 hover:ring-primary/50 transition group relative">
-                      {/* Edit button */}
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="absolute top-2 right-12 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                      </button>
-                      {/* Delete button */}
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="absolute top-2 right-2 w-8 h-8 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                      </button>
-                      
-                      {/* Thumbnail */}
-                      <div className="aspect-square bg-border flex items-center justify-center">
-                        {item.thumbnail_url ? (
-                          <img src={item.thumbnail_url} alt={item.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                        )}
-                      </div>
-                      
-                      {/* Info */}
-                      <div className="p-3">
-                        <p className="text-white font-bold text-sm truncate">{item.name || 'Unnamed'}</p>
-                        <p className="text-primary font-bold text-sm">{item.price ? `${item.price}R$` : 'Free'}</p>
-                        <span className={`inline-block text-xs px-2 py-0.5 rounded mt-1 ${item.type === 'gamepass' ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'}`}>
-                          {item.type === 'gamepass' ? 'Gamepass' : 'Clothing'}
-                        </span>
-                      </div>
+                  {leagues.map(league => (
+                    <div key={league.id} className="bg-app-bg rounded-xl p-4 relative group">
+                      <button onClick={() => handleDeleteLeague(league.id)} className="absolute top-2 right-2 w-6 h-6 bg-red-600 rounded-full text-white text-xs opacity-0 group-hover:opacity-100">✕</button>
+                      {league.icon_url ? <img src={league.icon_url} alt={league.name} className="w-16 h-16 object-cover rounded-lg mx-auto mb-2" /> : <div className="w-16 h-16 bg-border rounded-lg mx-auto mb-2" />}
+                      <p className="text-white font-bold text-center">{league.name}</p>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {activeTab === 'leagues' && leagueSubTab === 'teams' && (
+              <div className="p-6">
+                {!selectedLeague ? (
+                  <div className="grid grid-cols-4 gap-4">
+                    {leagues.map(league => (
+                      <div key={league.id} onClick={() => { setSelectedLeague(league); fetchTeams(league.id); }} className="bg-app-bg rounded-xl p-4 cursor-pointer hover:ring-2 ring-primary">
+                        {league.icon_url ? <img src={league.icon_url} alt={league.name} className="w-16 h-16 object-cover rounded-lg mx-auto mb-2" /> : <div className="w-16 h-16 bg-border rounded-lg mx-auto mb-2" />}
+                        <p className="text-white font-bold text-center">{league.name}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div>
+                    <button onClick={() => setSelectedLeague(null)} className="text-primary hover:underline mb-4">← Back to Leagues</button>
+                    <h3 className="text-white font-bold mb-4">{selectedLeague.name} - Teams</h3>
+                    <div className="flex gap-4 mb-4">
+                      <input type="text" placeholder="Team Name" value={newTeam.name} onChange={e => setNewTeam({...newTeam, name: e.target.value})} className="bg-app-bg border border-border rounded-lg px-3 py-2 text-white" />
+                      <input type="text" placeholder="Logo URL" value={newTeam.logoUrl} onChange={e => setNewTeam({...newTeam, logoUrl: e.target.value})} className="bg-app-bg border border-border rounded-lg px-3 py-2 text-white" />
+                      <button onClick={handleSaveTeam} className="px-6 py-2 bg-primary text-black rounded-lg font-bold">Add Team</button>
+                    </div>
+                    <div className="grid grid-cols-4 gap-4">
+                      {teams.map(team => (
+                        <div key={team.id} className="bg-app-bg rounded-xl p-4 relative group">
+                          <button onClick={() => handleDeleteTeam(team.id)} className="absolute top-2 right-2 w-6 h-6 bg-red-600 rounded-full text-white text-xs opacity-0 group-hover:opacity-100">✕</button>
+                          {team.logo_url ? <img src={team.logo_url} alt={team.name} className="w-16 h-16 object-cover rounded-lg mx-auto mb-2" /> : <div className="w-16 h-16 bg-border rounded-lg mx-auto mb-2" />}
+                          <p className="text-white font-bold text-center">{team.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'leagues' && leagueSubTab === 'merch' && (
+              <div className="p-6">
+                {!selectedLeague ? (
+                  <div className="grid grid-cols-4 gap-4">
+                    {leagues.map(league => (
+                      <div key={league.id} onClick={() => { setSelectedLeague(league); fetchTeams(league.id); setSelectedTeam(null); }} className="bg-app-bg rounded-xl p-4 cursor-pointer hover:ring-2 ring-primary">
+                        {league.icon_url ? <img src={league.icon_url} alt={league.name} className="w-16 h-16 object-cover rounded-lg mx-auto mb-2" /> : <div className="w-16 h-16 bg-border rounded-lg mx-auto mb-2" />}
+                        <p className="text-white font-bold text-center">{league.name}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : !selectedTeam ? (
+                  <div>
+                    <button onClick={() => setSelectedLeague(null)} className="text-primary hover:underline mb-4">← Back to Leagues</button>
+                    <h3 className="text-white font-bold mb-4">{selectedLeague.name} - Select Team</h3>
+                    <div className="grid grid-cols-4 gap-4">
+                      {teams.map(team => (
+                        <div key={team.id} onClick={() => { setSelectedTeam(team); fetchTeamKits(team.id); }} className="bg-app-bg rounded-xl p-4 cursor-pointer hover:ring-2 ring-primary">
+                          {team.logo_url ? <img src={team.logo_url} alt={team.name} className="w-16 h-16 object-cover rounded-lg mx-auto mb-2" /> : <div className="w-16 h-16 bg-border rounded-lg mx-auto mb-2" />}
+                          <p className="text-white font-bold text-center">{team.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <button onClick={() => setSelectedTeam(null)} className="text-primary hover:underline mb-4">← Back to Teams</button>
+                    <h3 className="text-white font-bold mb-4">{selectedTeam.name} - Kits</h3>
+                    <div className="flex gap-4 mb-4 flex-wrap">
+                      <input type="text" placeholder="Kit Name" value={newKit.name} onChange={e => setNewKit({...newKit, name: e.target.value})} className="bg-app-bg border border-border rounded-lg px-3 py-2 text-white" />
+                      <input type="text" placeholder="Roblox ID" value={newKit.robloxId} onChange={e => setNewKit({...newKit, robloxId: e.target.value})} className="bg-app-bg border border-border rounded-lg px-3 py-2 text-white" />
+                      <input type="text" placeholder="Price" value={newKit.price} onChange={e => setNewKit({...newKit, price: e.target.value})} className="bg-app-bg border border-border rounded-lg px-3 py-2 text-white" />
+                      <input type="text" placeholder="Icon URL" value={newKit.thumbnailUrl} onChange={e => setNewKit({...newKit, thumbnailUrl: e.target.value})} className="bg-app-bg border border-border rounded-lg px-3 py-2 text-white" />
+                      <button onClick={handleSaveKit} className="px-6 py-2 bg-primary text-black rounded-lg font-bold">Add Kit</button>
+                    </div>
+                    <div className="grid grid-cols-5 gap-4">
+                      {teamKits.map(kit => (
+                        <div key={kit.id} className="bg-app-bg rounded-xl overflow-hidden relative group">
+                          <button onClick={() => handleDeleteKit(kit.id)} className="absolute top-2 right-2 w-6 h-6 bg-red-600 rounded-full text-white text-xs opacity-0 group-hover:opacity-100 z-10">✕</button>
+                          {kit.thumbnail_url ? <img src={kit.thumbnail_url} alt={kit.name} className="w-full h-24 object-cover" /> : <div className="w-full h-24 bg-border" />}
+                          <div className="p-2">
+                            <p className="text-white font-bold text-xs truncate">{kit.name}</p>
+                            <p className="text-primary font-bold text-sm">{kit.price}R$</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab !== 'leagues' && (
+              <div className="flex-1 overflow-auto p-6">
+                {loading ? <div className="text-center text-text-muted py-8">Loading...</div> : items.length === 0 ? <div className="text-center text-text-muted py-8">No items</div> : (
+                  <div className="grid grid-cols-4 gap-4">
+                    {items.map(item => (
+                      <div key={item.id} className="bg-app-bg rounded-xl overflow-hidden hover:ring-2 ring-primary/50 transition group relative">
+                        <button onClick={() => handleEdit(item)} className="absolute top-2 right-12 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10">✎</button>
+                        <button onClick={() => handleDelete(item.id)} className="absolute top-2 right-2 w-8 h-8 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10">✕</button>
+                        <div className="aspect-square bg-border flex items-center justify-center">
+                          {item.thumbnail_url ? <img src={item.thumbnail_url} alt={item.name} className="w-full h-full object-cover" /> : <div className="text-text-muted">No img</div>}
+                        </div>
+                        <div className="p-3">
+                          <p className="text-white font-bold text-sm truncate">{item.name || 'Unnamed'}</p>
+                          <p className="text-primary font-bold text-sm">{item.price ? `${item.price}R$` : 'Free'}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
