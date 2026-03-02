@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || '';
-    const url = `${baseUrl}/api/group-kits?limit=100`;
-    
-    const response = await fetch(url, { cache: 'no-store' });
+    const url = new URL('/api/group-kits', req.url);
+    url.searchParams.set('limit', '100');
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      cache: 'no-store',
+    });
     
     if (!response.ok) {
       return NextResponse.json({ error: 'Failed to fetch group-kits', status: response.status }, { status: 500 });
@@ -34,14 +37,11 @@ export async function GET() {
       synced++;
     }
 
-    return NextResponse.json({ ok: true, synced });
+    return NextResponse.json({ ok: true, syncedCount: synced });
   } catch (error: any) {
     console.error('[Sync] Error:', error);
     return NextResponse.json(
-      {
-        error: 'Sync failed',
-        details: error?.message ?? String(error),
-      },
+      { error: 'Sync failed', details: error?.message ?? String(error) },
       { status: 500 }
     );
   }
