@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
+import { normalizeShopItemType } from '@/lib/utils';
 import clothingData from '@/app/data/clothing.json';
 
 async function fetchThumbnail(assetId: number): Promise<string | null> {
@@ -61,18 +62,10 @@ export async function GET(req: Request) {
       let thumbnailUrl = item.thumbnailUrl || item.thumbnail_url || item.icon || null;
       const link = item.link || `https://www.roblox.com/catalog/${robloxId}`;
       
-      let rawType = item.type || item.itemType || '';
-      let normalizedType: string;
+      const rawType = item.type || item.itemType || item.assetType || '';
+      const normalizedType = normalizeShopItemType(rawType);
 
-      if (rawType === 'gamepass') {
-        normalizedType = 'gamepass';
-      } else if (rawType === 'shirt') {
-        normalizedType = 'shirt';
-      } else if (rawType === 'pants') {
-        normalizedType = 'pants';
-      } else {
-        normalizedType = 'item';
-      }
+      console.log('[Sync] Processing item:', { id: robloxId, rawType, normalizedType });
 
       if (!thumbnailUrl) {
         thumbnailUrl = await fetchThumbnail(robloxId);

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
+import { normalizeShopItemType } from '@/lib/utils';
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const typeParam = searchParams.get('type') ?? 'item';
 
-    const normalizedGetType = typeParam === 'gamepass' ? 'gamepass' : 
-                             typeParam === 'shirt' ? 'shirt' : 
-                             typeParam === 'pants' ? 'pants' : 'item';
+    const normalizedGetType = normalizeShopItemType(typeParam);
 
     const rows = await sql`
       SELECT id, roblox_id, name, price, thumbnail_url, link, type
@@ -39,16 +38,7 @@ export async function POST(req: NextRequest) {
     let itemPrice = price;
     let itemLink = link;
 
-    let normalizedType: string;
-    if (type === 'gamepass') {
-      normalizedType = 'gamepass';
-    } else if (type === 'shirt') {
-      normalizedType = 'shirt';
-    } else if (type === 'pants') {
-      normalizedType = 'pants';
-    } else {
-      normalizedType = 'item';
-    }
+    const normalizedType = normalizeShopItemType(type);
 
     if (!thumbnailUrl) {
       try {
