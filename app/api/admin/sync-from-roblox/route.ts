@@ -18,6 +18,16 @@ async function fetchThumbnail(assetId: number): Promise<string | null> {
   return null;
 }
 
+function normalizeType(rawType: string | undefined): string {
+  if (rawType === 'gamepass') {
+    return 'gamepass';
+  }
+  if (rawType === 'shirt' || rawType === 'pants' || rawType === 'tshirt' || rawType === 'clothing' || !rawType) {
+    return 'item';
+  }
+  return 'item';
+}
+
 export async function GET(req: Request) {
   try {
     const url = new URL('/api/group-kits', req.url);
@@ -47,6 +57,7 @@ export async function GET(req: Request) {
         price: item.price,
         thumbnailUrl: item.icon || null,
         link: item.link || `https://www.roblox.com/catalog/${item.id}`,
+        type: 'item',
       }));
       source = 'json';
     }
@@ -59,7 +70,7 @@ export async function GET(req: Request) {
       const price = item.price ?? null;
       let thumbnailUrl = item.thumbnailUrl || item.thumbnail_url || item.icon || null;
       const link = item.link || `https://www.roblox.com/catalog/${robloxId}`;
-      const type = 'item';
+      const normalizedType = normalizeType(item.type);
 
       if (!thumbnailUrl) {
         thumbnailUrl = await fetchThumbnail(robloxId);
@@ -67,7 +78,7 @@ export async function GET(req: Request) {
 
       await sql`
         INSERT INTO shop_items (roblox_id, name, price, thumbnail_url, link, type)
-        VALUES (${robloxId}, ${name}, ${price}, ${thumbnailUrl}, ${link}, ${type})
+        VALUES (${robloxId}, ${name}, ${price}, ${thumbnailUrl}, ${link}, ${normalizedType})
         ON CONFLICT (roblox_id) DO UPDATE SET
           name = EXCLUDED.name,
           price = EXCLUDED.price,
