@@ -62,10 +62,19 @@ export async function GET(req: Request) {
       let thumbnailUrl = item.thumbnailUrl || item.thumbnail_url || item.icon || null;
       const link = item.link || `https://www.roblox.com/catalog/${robloxId}`;
       
-      const rawType = item.type || item.itemType || item.assetType || '';
-      const normalizedType = normalizeShopItemType(rawType);
+      const rawTypeSource =
+        (typeof item.type === 'string' && item.type) ||
+        (typeof item.itemType === 'string' && item.itemType) ||
+        (typeof item.assetType === 'string' && item.assetType) ||
+        '';
 
-      console.log('[Sync] Processing item:', { id: robloxId, rawType, normalizedType });
+      const normalizedType = normalizeShopItemType(rawTypeSource);
+
+      console.log('[Sync] Processing item:', {
+        id: robloxId,
+        rawType: rawTypeSource,
+        normalizedType,
+      });
 
       if (!thumbnailUrl) {
         thumbnailUrl = await fetchThumbnail(robloxId);
