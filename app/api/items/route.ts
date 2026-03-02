@@ -45,6 +45,7 @@ async function getItemsFromDB(): Promise<Item[]> {
     const rows = await sql`
       SELECT roblox_id, name, price, thumbnail_url, link
       FROM shop_items
+      WHERE type != 'gamepass'
       ORDER BY created_at DESC;
     `;
     

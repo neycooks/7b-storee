@@ -3,11 +3,6 @@ import { sql } from '@/lib/db';
 
 export async function DELETE(req: NextRequest) {
   try {
-    const auth = req.cookies.get('admin-auth')?.value;
-    if (auth !== 'true') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
