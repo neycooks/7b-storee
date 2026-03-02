@@ -59,9 +59,11 @@ export async function GET(req: Request) {
       const robloxId = item.id;
       const name = item.name;
       const price = item.price ?? null;
-      let thumbnailUrl = item.thumbnailUrl || item.thumbnail_url || item.icon || null;
-      const link = item.link || `https://www.roblox.com/catalog/${robloxId}`;
-      
+      let thumbnailUrl =
+        item.thumbnailUrl || item.thumbnail_url || item.icon || null;
+      const link =
+        item.link || `https://www.roblox.com/catalog/${robloxId}`;
+
       const rawTypeSource =
         (typeof item.type === 'string' && item.type) ||
         (typeof item.itemType === 'string' && item.itemType) ||
@@ -70,7 +72,7 @@ export async function GET(req: Request) {
 
       const normalizedType = normalizeShopItemType(rawTypeSource);
 
-      console.log('[Sync] Processing item:', {
+      console.log('[Sync] Processing item BEFORE INSERT:', {
         id: robloxId,
         rawType: rawTypeSource,
         normalizedType,
@@ -80,17 +82,28 @@ export async function GET(req: Request) {
         thumbnailUrl = await fetchThumbnail(robloxId);
       }
 
-      await sql`
-        INSERT INTO shop_items (roblox_id, name, price, thumbnail_url, link, type)
-        VALUES (${robloxId}, ${name}, ${price}, ${thumbnailUrl}, ${link}, ${normalizedType})
-        ON CONFLICT (roblox_id) DO UPDATE SET
-          name = EXCLUDED.name,
-          price = EXCLUDED.price,
-          thumbnail_url = EXCLUDED.thumbnail_url,
-          link = EXCLUDED.link,
-          type = EXCLUDED.type;
-      `;
-      synced++;
+      try {
+        await sql`
+          INSERT INTO shop_items (roblox_id, name, price, thumbnail_url, link, type)
+          VALUES (${robloxId}, ${name}, ${price}, ${thumbnailUrl}, ${link}, ${normalizedType})
+          ON CONFLICT (roblox_id) DO UPDATE SET
+            name = EXCLUDED.name,
+            price = EXCLUDED.price,
+            thumbnail_url = EXCLUDED.thumbnail_url,
+            link = EXCLUDED.link,
+            type = EXCLUDED.type;
+        `;
+        console.log('[Sync] INSERT OK for item', robloxId);
+        synced++;
+      } catch (e: any) {
+        console.error('[Sync] INSERT FAILED for item', {
+          id: robloxId,
+          rawType: rawTypeSource,
+          normalizedType,
+          error: e?.message ?? String(e),
+        });
+        throw e;
+      }
     }
 
     return NextResponse.json({ ok: true, source, syncedCount: synced });
