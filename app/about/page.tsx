@@ -52,12 +52,17 @@ export default function About() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newItem, setNewItem] = useState({ robloxId: '', name: '', price: '', iconUrl: '' });
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (showLogin || showAdmin) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && (showLogin || showAdmin)) {
       checkAuth();
     }
-  }, [showLogin, showAdmin]);
+  }, [mounted, showLogin, showAdmin]);
 
   useEffect(() => {
     if (isAuthenticated && showLogin) {
@@ -76,6 +81,9 @@ export default function About() {
     const res = await fetch('/api/admin/me');
     const data = await res.json();
     setIsAuthenticated(data.authenticated);
+    if (data.authenticated && !showLogin) {
+      setShowAdmin(true);
+    }
   };
 
   const handleLogin = async () => {
@@ -188,8 +196,8 @@ export default function About() {
 
       {/* Login Modal */}
       {showLogin && (
-        <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4">
-          <div className="bg-card-bg rounded-2xl p-8 w-full max-w-md shadow-2xl">
+        <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4" onClick={() => setShowLogin(false)}>
+          <div className="bg-card-bg rounded-2xl p-8 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-white font-bold text-xl">Admin Login</h2>
               <button onClick={() => setShowLogin(false)} className="text-text-muted hover:text-white">
@@ -215,8 +223,8 @@ export default function About() {
 
       {/* Admin Panel Modal */}
       {showAdmin && isAuthenticated && (
-        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
-          <div className="bg-card-bg rounded-2xl w-full max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4" onClick={() => setShowAdmin(false)}>
+          <div className="bg-card-bg rounded-2xl w-full max-w-5xl max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="flex justify-between items-center p-6 border-b border-border">
               <h2 className="text-white font-bold text-xl">Admin Panel</h2>
