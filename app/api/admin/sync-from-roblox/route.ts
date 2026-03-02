@@ -9,13 +9,13 @@ export async function GET() {
     const response = await fetch(url, { cache: 'no-store' });
     
     if (!response.ok) {
-      return NextResponse.json({ error: 'Failed to fetch group-kits' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to fetch group-kits', status: response.status }, { status: 500 });
     }
     
     const data = await response.json();
     
     if (!data.ok || !Array.isArray(data.items)) {
-      return NextResponse.json({ error: 'Invalid group-kits response' }, { status: 500 });
+      return NextResponse.json({ error: 'Invalid group-kits response', data }, { status: 500 });
     }
 
     let synced = 0;
@@ -35,8 +35,14 @@ export async function GET() {
     }
 
     return NextResponse.json({ ok: true, synced });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Sync] Error:', error);
-    return NextResponse.json({ error: 'Sync failed' }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Sync failed',
+        details: error?.message ?? String(error),
+      },
+      { status: 500 }
+    );
   }
 }
