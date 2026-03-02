@@ -29,8 +29,8 @@ export async function GET(req: Request) {
         id: item.id,
         name: item.name,
         price: item.price,
-        thumbnailUrl: item.icon,
-        description: item.description || '',
+        thumbnailUrl: item.icon || null,
+        link: item.link || `https://www.roblox.com/catalog/${item.id}`,
       }));
       source = 'json';
     }
@@ -38,15 +38,22 @@ export async function GET(req: Request) {
     let synced = 0;
     
     for (const item of items) {
+      const robloxId = item.id;
+      const name = item.name;
+      const price = item.price ?? null;
+      const thumbnailUrl = item.thumbnailUrl || item.thumbnail_url || item.icon || null;
+      const link = item.link || `https://www.roblox.com/catalog/${robloxId}`;
+      const type = 'item';
+
       await sql`
-        INSERT INTO shop_items (roblox_id, name, price, thumbnail_url, type, description)
-        VALUES (${item.id}, ${item.name}, ${item.price}, ${item.thumbnailUrl}, 'shirt', ${item.description || ''})
+        INSERT INTO shop_items (roblox_id, name, price, thumbnail_url, link, type)
+        VALUES (${robloxId}, ${name}, ${price}, ${thumbnailUrl}, ${link}, ${type})
         ON CONFLICT (roblox_id) DO UPDATE SET
           name = EXCLUDED.name,
           price = EXCLUDED.price,
           thumbnail_url = EXCLUDED.thumbnail_url,
-          type = EXCLUDED.type,
-          description = EXCLUDED.description;
+          link = EXCLUDED.link,
+          type = EXCLUDED.type;
       `;
       synced++;
     }

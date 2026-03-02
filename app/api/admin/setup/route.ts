@@ -10,13 +10,25 @@ export async function GET() {
         name TEXT NOT NULL,
         price INTEGER,
         thumbnail_url TEXT,
-        type TEXT CHECK (type IN ('gamepass', 'shirt', 'pants')),
-        description TEXT,
+        link TEXT,
+        type TEXT CHECK (type IN ('item', 'gamepass', 'shirt', 'pants')),
         created_at TIMESTAMP DEFAULT NOW()
       );
     `;
 
-    return NextResponse.json({ ok: true, message: 'shop_items table created or already exists' });
+    try {
+      await sql`ALTER TABLE shop_items ADD COLUMN IF NOT EXISTS link TEXT;`;
+    } catch (e) {
+      // column may already exist
+    }
+
+    try {
+      await sql`ALTER TABLE shop_items ADD COLUMN IF NOT EXISTS type TEXT CHECK (type IN ('item', 'gamepass', 'shirt', 'pants'));`;
+    } catch (e) {
+      // column may already exist
+    }
+
+    return NextResponse.json({ ok: true, message: 'shop_items table ready' });
   } catch (error) {
     console.error('[Setup] Error:', error);
     return NextResponse.json({ error: 'Setup failed' }, { status: 500 });

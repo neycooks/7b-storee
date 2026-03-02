@@ -43,7 +43,7 @@ async function getThumbnails(assetIds: number[]): Promise<Record<number, string>
 async function getItemsFromDB(): Promise<Item[]> {
   try {
     const rows = await sql`
-      SELECT roblox_id, name, price, thumbnail_url, description
+      SELECT roblox_id, name, price, thumbnail_url, link
       FROM shop_items
       ORDER BY created_at DESC;
     `;
@@ -51,9 +51,9 @@ async function getItemsFromDB(): Promise<Item[]> {
     return rows.map((row: any) => ({
       id: Number(row.roblox_id),
       name: row.name,
-      description: row.description || '',
+      description: '',
       price: row.price,
-      link: `https://www.roblox.com/catalog/${row.roblox_id}`,
+      link: row.link || `https://www.roblox.com/catalog/${row.roblox_id}`,
       icon: row.thumbnail_url || null,
     }));
   } catch (error) {
