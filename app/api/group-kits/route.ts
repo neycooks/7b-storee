@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     if (!response.ok) {
       console.error('[GroupKits] Roblox API error:', response.status, response.statusText);
       return NextResponse.json(
-        { ok: false, error: 'Failed to fetch group kits from Roblox.' },
+        { error: 'group-kits failed', details: `Roblox API returned ${response.status}` },
         { status: 500 }
       );
     }
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
     if (!data || !Array.isArray(data.data)) {
       console.error('[GroupKits] Unexpected response structure:', Object.keys(data || {}));
       return NextResponse.json(
-        { ok: false, error: 'Failed to fetch group kits from Roblox.' },
+        { error: 'group-kits failed', details: 'Invalid response structure from Roblox' },
         { status: 500 }
       );
     }
@@ -75,18 +75,14 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json(
-      { 
-        ok: true, 
-        items: simplifiedItems,
-        nextCursor: data.nextPageCursor ?? null,
-      },
-      { status: 200 }
-    );
-  } catch (error) {
+    return NextResponse.json({
+      items: simplifiedItems,
+      nextCursor: data.nextPageCursor ?? null,
+    });
+  } catch (error: any) {
     console.error('[GroupKits] Error:', error);
     return NextResponse.json(
-      { ok: false, error: 'Failed to fetch group kits from Roblox.' },
+      { error: 'group-kits failed', details: error?.message ?? String(error) },
       { status: 500 }
     );
   }

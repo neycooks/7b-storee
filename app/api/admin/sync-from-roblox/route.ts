@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
+import clothingData from '@/app/data/clothing.json';
 
 export async function GET(req: Request) {
   try {
@@ -10,20 +11,33 @@ export async function GET(req: Request) {
       method: 'GET',
       cache: 'no-store',
     });
-    
-    if (!response.ok) {
-      return NextResponse.json({ error: 'Failed to fetch group-kits', status: response.status }, { status: 500 });
+
+    let items: any[] = [];
+    let source = 'json';
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.items && Array.isArray(data.items) && data.items.length > 0) {
+        items = data.items;
+        source = 'roblox';
+      }
     }
-    
-    const data = await response.json();
-    
-    if (!data.ok || !Array.isArray(data.items)) {
-      return NextResponse.json({ error: 'Invalid group-kits response', data }, { status: 500 });
+
+    if (items.length === 0) {
+      console.log('[Sync] Roblox fetch failed or empty, using JSON fallback');
+      items = clothingData.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        thumbnailUrl: item.icon,
+        description: item.description || '',
+      }));
+      source = 'json';
     }
 
     let synced = 0;
     
-    for (const item of data.items) {
+    for (const item of items) {
       await sql`
         INSERT INTO shop_items (roblox_id, name, price, thumbnail_url, type, description)
         VALUES (${item.id}, ${item.name}, ${item.price}, ${item.thumbnailUrl}, 'shirt', ${item.description || ''})
@@ -37,7 +51,7 @@ export async function GET(req: Request) {
       synced++;
     }
 
-    return NextResponse.json({ ok: true, syncedCount: synced });
+    return NextResponse.json({ ok: true, source, syncedCount: synced });
   } catch (error: any) {
     console.error('[Sync] Error:', error);
     return NextResponse.json(
