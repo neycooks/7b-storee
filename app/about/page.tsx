@@ -50,6 +50,8 @@ export default function About() {
   const [gamepassItems, setGamepassItems] = useState<ShopItem[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newItem, setNewItem] = useState({ robloxId: '', name: '', price: '', iconUrl: '' });
+  const [editingItem, setEditingItem] = useState<ShopItem | null>(null);
+  const [editForm, setEditForm] = useState({ robloxId: '', name: '', price: '', iconUrl: '', link: '' });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -117,6 +119,44 @@ export default function About() {
       await fetchItems();
     } else {
       alert('Failed to create item');
+    }
+  };
+
+  const handleEdit = (item: ShopItem) => {
+    setEditingItem(item);
+    setEditForm({
+      robloxId: item.roblox_id.toString(),
+      name: item.name || '',
+      price: item.price?.toString() || '',
+      iconUrl: item.thumbnail_url || '',
+      link: item.link || '',
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingItem) return;
+
+    const type = activeTab === 'clothing' ? 'item' : 'gamepass';
+    
+    const res = await fetch('/api/admin/shop-items', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: editingItem.id,
+        type,
+        robloxId: parseInt(editForm.robloxId) || editingItem.roblox_id,
+        name: editForm.name || null,
+        price: editForm.price ? parseInt(editForm.price) : null,
+        iconUrl: editForm.iconUrl || null,
+        link: editForm.link || null,
+      }),
+    });
+
+    if (res.ok) {
+      setEditingItem(null);
+      await fetchItems();
+    } else {
+      alert('Failed to update item');
     }
   };
 
@@ -288,6 +328,56 @@ export default function About() {
               </div>
             )}
 
+            {/* Edit Form */}
+            {editingItem && (
+              <div className="p-6 pb-0">
+                <div className="bg-app-bg rounded-xl p-4 mb-4">
+                  <h3 className="text-white font-bold mb-3">Edit Item</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      placeholder="Roblox ID"
+                      value={editForm.robloxId}
+                      onChange={e => setEditForm({...editForm, robloxId: e.target.value})}
+                      className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Name"
+                      value={editForm.name}
+                      onChange={e => setEditForm({...editForm, name: e.target.value})}
+                      className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Price (R$)"
+                      value={editForm.price}
+                      onChange={e => setEditForm({...editForm, price: e.target.value})}
+                      className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Link"
+                      value={editForm.link}
+                      onChange={e => setEditForm({...editForm, link: e.target.value})}
+                      className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Icon URL"
+                      value={editForm.iconUrl}
+                      onChange={e => setEditForm({...editForm, iconUrl: e.target.value})}
+                      className="col-span-2 bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={handleSaveEdit} className="px-4 py-2 bg-primary text-black rounded-lg font-bold text-sm hover:opacity-90 transition">Save</button>
+                    <button onClick={() => setEditingItem(null)} className="px-4 py-2 bg-app-bg text-text-muted rounded-lg font-medium text-sm hover:text-white transition">Cancel</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Items Grid */}
             <div className="flex-1 overflow-auto p-6">
               {loading ? (
@@ -298,6 +388,13 @@ export default function About() {
                 <div className="grid grid-cols-4 gap-4">
                   {items.map(item => (
                     <div key={item.id} className="bg-app-bg rounded-xl overflow-hidden hover:ring-2 hover:ring-primary/50 transition group relative">
+                      {/* Edit button */}
+                      <button
+                        onClick={() => handleEdit(item)}
+                        className="absolute top-2 right-12 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
                       {/* Delete button */}
                       <button
                         onClick={() => handleDelete(item.id)}

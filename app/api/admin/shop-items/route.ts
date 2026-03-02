@@ -25,24 +25,27 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const auth = req.cookies.get('admin-auth')?.value;
-    if (auth !== 'true') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const body = await req.json();
-    const { type, robloxId, name, price, iconUrl, link } = body;
+    const { id, type, robloxId, name, price, iconUrl, link } = body;
 
+    const normalizedType = normalizeShopItemType(type);
+    
     let thumbnailUrl = iconUrl || null;
     let itemName = name;
     let itemPrice = price;
     let itemLink = link;
+    let itemRobloxId = robloxId;
 
-    const normalizedType = normalizeShopItemType(type);
+    if (id && !robloxId) {
+      const existing = await sql`SELECT roblox_id FROM shop_items WHERE id = ${id}`;
+      if (existing.length > 0) {
+        itemRobloxId = existing[0].roblox_id;
+      }
+    }
 
-    if (!thumbnailUrl) {
+    if (!thumbnailUrl && itemRobloxId) {
       try {
-        const thumbnailUrlFetch = `https://thumbnails.roblox.com/v1/assets?assetIds=${robloxId}&returnPolicy=PlaceHolder&size=150x150&format=Png&aspectRatio=1x1`;
+        const thumbnailUrlFetch = `https://thumbnails.roblox.com/v1/assets?assetIds=${itemRobloxId}&returnPolicy=PlaceHolder&size=150x150&format=Png&aspectRatio=1x1`;
         const thumbRes = await fetch(thumbnailUrlFetch, { headers: { 'User-Agent': 'Mozilla/5.0' } });
         if (thumbRes.ok) {
           const thumbData = await thumbRes.json();
@@ -55,26 +58,34 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!itemLink) {
+    if (!itemLink && itemRobloxId) {
       itemLink = normalizedType === 'gamepass' 
-        ? `https://www.roblox.com/game-pass/${robloxId}`
-        : `https://www.roblox.com/catalog/${robloxId}`;
+        ? `https://www.roblox.com/game-pass/${itemRobloxId}`
+        : `https://www.roblox.com/catalog/${itemRobloxId}`;
     }
 
-    await sql`
-      INSERT INTO shop_items (roblox_id, name, price, thumbnail_url, link, type)
-      VALUES (${robloxId}, ${itemName}, ${itemPrice}, ${thumbnailUrl}, ${itemLink}, ${normalizedType})
-      ON CONFLICT (roblox_id) DO UPDATE SET
-        name = EXCLUDED.name,
-        price = EXCLUDED.price,
-        thumbnail_url = EXCLUDED.thumbnail_url,
-        link = EXCLUDED.link,
-        type = EXCLUDED.type;
-    `;
+    if (id) {
+      await sql`
+        UPDATE shop_items 
+        SET name = ${itemName}, price = ${itemPrice}, thumbnail_url = ${thumbnailUrl}, link = ${itemLink}, type = ${normalizedType}
+        WHERE id = ${id}
+      `;
+    } else {
+      await sql`
+        INSERT INTO shop_items (roblox_id, name, price, thumbnail_url, link, type)
+        VALUES (${itemRobloxId}, ${itemName}, ${itemPrice}, ${thumbnailUrl}, ${itemLink}, ${normalizedType})
+        ON CONFLICT (roblox_id) DO UPDATE SET
+          name = EXCLUDED.name,
+          price = EXCLUDED.price,
+          thumbnail_url = EXCLUDED.thumbnail_url,
+          link = EXCLUDED.link,
+          type = EXCLUDED.type;
+      `;
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('[ShopItems] POST error:', error);
-    return NextResponse.json({ error: 'Failed to create item' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to save item' }, { status: 500 });
   }
 }
