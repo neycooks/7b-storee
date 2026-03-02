@@ -86,6 +86,9 @@ export default function About() {
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [newKit, setNewKit] = useState({ name: '', robloxId: '', price: '', thumbnailUrl: '', link: '' });
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [editingKit, setEditingKit] = useState<TeamKit | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (showAdmin) {
@@ -216,6 +219,12 @@ export default function About() {
     }
   };
 
+  const handleEditLeague = (league: League) => {
+    setEditingLeague(league);
+    setNewLeague({ name: league.name, iconUrl: league.icon_url || '', joinLink: league.join_link || '' });
+    setShowCreateForm(true);
+  };
+
   const handleDeleteLeague = async (id: number) => {
     if (!confirm('Delete this league and all its teams?')) return;
     await fetch(`/api/admin/leagues?id=${id}`, { method: 'DELETE' });
@@ -227,12 +236,18 @@ export default function About() {
     const res = await fetch('/api/admin/teams', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ leagueId: selectedLeague.id, name: newTeam.name, logoUrl: newTeam.logoUrl }),
+      body: JSON.stringify({ id: editingTeam?.id, leagueId: selectedLeague.id, name: newTeam.name, logoUrl: newTeam.logoUrl }),
     });
     if (res.ok) {
       setNewTeam({ leagueId: 0, name: '', logoUrl: '', teamCount: '1' });
+      setEditingTeam(null);
       fetchTeams(selectedLeague.id);
     }
+  };
+
+  const handleEditTeam = (team: Team) => {
+    setEditingTeam(team);
+    setNewTeam({ leagueId: team.league_id, name: team.name, logoUrl: team.logo_url || '', teamCount: '1' });
   };
 
   const handleDeleteTeam = async (id: number) => {
@@ -252,13 +267,19 @@ export default function About() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        teamId: selectedTeam.id, name: newKit.name, robloxId: robloxId ? parseInt(robloxId) : null, price: newKit.price ? parseInt(newKit.price) : null, thumbnailUrl: newKit.thumbnailUrl, link: newKit.link || `https://www.roblox.com/catalog/${robloxId}`,
+        id: editingKit?.id, teamId: selectedTeam.id, name: newKit.name, robloxId: robloxId ? parseInt(robloxId) : null, price: newKit.price ? parseInt(newKit.price) : null, thumbnailUrl: newKit.thumbnailUrl, link: newKit.link || `https://www.roblox.com/catalog/${robloxId}`,
       }),
     });
     if (res.ok) {
       setNewKit({ name: '', robloxId: '', price: '', thumbnailUrl: '', link: '' });
+      setEditingKit(null);
       fetchTeamKits(selectedTeam.id);
     }
+  };
+
+  const handleEditKit = (kit: TeamKit) => {
+    setEditingKit(kit);
+    setNewKit({ name: kit.name, robloxId: kit.roblox_id?.toString() || '', price: kit.price?.toString() || '', thumbnailUrl: kit.thumbnail_url || '', link: kit.link || '' });
   };
 
   const handleDeleteKit = async (id: number) => {
@@ -276,6 +297,10 @@ export default function About() {
   };
 
   const items = activeTab === 'clothing' ? clothingItems : activeTab === 'gamepasses' ? gamepassItems : [];
+  const filteredItems = items.filter(item => !searchQuery || (item.name && item.name.toLowerCase().includes(searchQuery.toLowerCase())));
+  const filteredLeagues = leagues.filter(l => !searchQuery || l.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredTeams = teams.filter(t => !searchQuery || t.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredKits = teamKits.filter(k => !searchQuery || k.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <div className="animate-fade-in">
@@ -324,10 +349,22 @@ export default function About() {
               <button onClick={() => setShowAdmin(false)} className="text-text-muted hover:text-white p-2">✕</button>
             </div>
 
-            <div className="flex gap-4 p-6 pt-0">
-              <button onClick={() => { setActiveTab('clothing'); setSelectedLeague(null); setSelectedTeam(null); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'clothing' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Clothing</button>
-              <button onClick={() => { setActiveTab('gamepasses'); setSelectedLeague(null); setSelectedTeam(null); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'gamepasses' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Gamepasses</button>
-              <button onClick={() => { setActiveTab('leagues'); setLeagueSubTab('league'); setSelectedLeague(null); setSelectedTeam(null); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'leagues' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Leagues</button>
+            <div className="flex gap-4 p-6 pt-0 items-center">
+              <div className="flex gap-2">
+                <button onClick={() => { setActiveTab('clothing'); setSelectedLeague(null); setSelectedTeam(null); setSearchQuery(''); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'clothing' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Clothing</button>
+                <button onClick={() => { setActiveTab('gamepasses'); setSelectedLeague(null); setSelectedTeam(null); setSearchQuery(''); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'gamepasses' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Gamepasses</button>
+                <button onClick={() => { setActiveTab('leagues'); setLeagueSubTab('league'); setSelectedLeague(null); setSelectedTeam(null); setSearchQuery(''); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'leagues' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Leagues</button>
+              </div>
+              <div className="flex-1"></div>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-app-bg border border-border rounded-lg px-3 py-2 text-white text-sm w-48"
+                />
+              </div>
             </div>
 
             {activeTab !== 'leagues' && (
@@ -337,10 +374,10 @@ export default function About() {
             )}
 
             {activeTab === 'leagues' && (
-              <div className="flex gap-2 px-6 pb-0">
-                <button onClick={() => { setLeagueSubTab('league'); setSelectedLeague(null); setSelectedTeam(null); }} className={`px-4 py-2 rounded-lg font-bold text-sm ${leagueSubTab === 'league' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted'}`}>Leagues</button>
-                <button onClick={() => { setLeagueSubTab('teams'); setSelectedTeam(null); }} className={`px-4 py-2 rounded-lg font-bold text-sm ${leagueSubTab === 'teams' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted'}`}>Teams</button>
-                <button onClick={() => setLeagueSubTab('merch')} className={`px-4 py-2 rounded-lg font-bold text-sm ${leagueSubTab === 'merch' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted'}`}>Merch</button>
+              <div className="flex gap-2 px-6 pb-0 items-center">
+                <button onClick={() => { setLeagueSubTab('league'); setSelectedLeague(null); setSelectedTeam(null); setSearchQuery(''); }} className={`px-4 py-2 rounded-lg font-bold text-sm ${leagueSubTab === 'league' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted'}`}>Leagues</button>
+                <button onClick={() => { setLeagueSubTab('teams'); setSelectedTeam(null); setSearchQuery(''); }} className={`px-4 py-2 rounded-lg font-bold text-sm ${leagueSubTab === 'teams' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted'}`}>Teams</button>
+                <button onClick={() => { setLeagueSubTab('merch'); setSearchQuery(''); }} className={`px-4 py-2 rounded-lg font-bold text-sm ${leagueSubTab === 'merch' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted'}`}>Merch</button>
               </div>
             )}
 
@@ -370,7 +407,7 @@ export default function About() {
                 </div>
                 {showCreateForm && (
                   <div className="bg-app-bg rounded-xl p-4 mb-4">
-                    <h3 className="text-white font-bold mb-3">Create League</h3>
+                    <h3 className="text-white font-bold mb-3">{editingLeague ? 'Edit League' : 'Create League'}</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <input type="text" placeholder="League Name" value={newLeague.name} onChange={e => setNewLeague({...newLeague, name: e.target.value})} className="col-span-2 bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
                       <input type="text" placeholder="Icon URL" value={newLeague.iconUrl} onChange={e => setNewLeague({...newLeague, iconUrl: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
@@ -378,13 +415,14 @@ export default function About() {
                     </div>
                     <div className="flex gap-2 mt-3">
                       <button onClick={handleSaveLeague} className="px-4 py-2 bg-primary text-black rounded-lg font-bold text-sm">Save</button>
-                      <button onClick={() => setShowCreateForm(false)} className="px-4 py-2 bg-app-bg text-text-muted rounded-lg font-medium text-sm">Cancel</button>
+                      <button onClick={() => { setShowCreateForm(false); setEditingLeague(null); }} className="px-4 py-2 bg-app-bg text-text-muted rounded-lg font-medium text-sm">Cancel</button>
                     </div>
                   </div>
                 )}
                 <div className="grid grid-cols-4 gap-4">
-                  {leagues.map(league => (
+                  {filteredLeagues.map(league => (
                     <div key={league.id} className="bg-app-bg rounded-xl p-4 relative group">
+                      <button onClick={() => handleEditLeague(league)} className="absolute top-2 right-10 w-6 h-6 bg-blue-600 rounded-full text-white text-xs opacity-0 group-hover:opacity-100">✎</button>
                       <button onClick={() => handleDeleteLeague(league.id)} className="absolute top-2 right-2 w-6 h-6 bg-red-600 rounded-full text-white text-xs opacity-0 group-hover:opacity-100">✕</button>
                       {league.icon_url ? <img src={league.icon_url} alt={league.name} className="w-16 h-16 object-cover rounded-lg mx-auto mb-2" /> : <div className="w-16 h-16 bg-border rounded-lg mx-auto mb-2" />}
                       <p className="text-white font-bold text-center">{league.name}</p>
@@ -409,14 +447,16 @@ export default function About() {
                   <div>
                     <button onClick={() => setSelectedLeague(null)} className="text-primary hover:underline mb-4">← Back to Leagues</button>
                     <h3 className="text-white font-bold mb-4">{selectedLeague.name} - Teams</h3>
-                    <div className="flex gap-4 mb-4">
+                    <div className="flex gap-4 mb-4 flex-wrap">
                       <input type="text" placeholder="Team Name" value={newTeam.name} onChange={e => setNewTeam({...newTeam, name: e.target.value})} className="bg-app-bg border border-border rounded-lg px-3 py-2 text-white" />
                       <input type="text" placeholder="Logo URL" value={newTeam.logoUrl} onChange={e => setNewTeam({...newTeam, logoUrl: e.target.value})} className="bg-app-bg border border-border rounded-lg px-3 py-2 text-white" />
-                      <button onClick={handleSaveTeam} className="px-6 py-2 bg-primary text-black rounded-lg font-bold">Add Team</button>
+                      <button onClick={handleSaveTeam} className="px-6 py-2 bg-primary text-black rounded-lg font-bold">{editingTeam ? 'Save' : 'Add'} Team</button>
+                      {editingTeam && <button onClick={() => { setEditingTeam(null); setNewTeam({ leagueId: 0, name: '', logoUrl: '', teamCount: '1' }); }} className="px-4 py-2 bg-app-bg text-text-muted rounded-lg font-medium">Cancel</button>}
                     </div>
                     <div className="grid grid-cols-4 gap-4">
-                      {teams.map(team => (
+                      {filteredTeams.map(team => (
                         <div key={team.id} className="bg-app-bg rounded-xl p-4 relative group">
+                          <button onClick={() => handleEditTeam(team)} className="absolute top-2 right-10 w-6 h-6 bg-blue-600 rounded-full text-white text-xs opacity-0 group-hover:opacity-100">✎</button>
                           <button onClick={() => handleDeleteTeam(team.id)} className="absolute top-2 right-2 w-6 h-6 bg-red-600 rounded-full text-white text-xs opacity-0 group-hover:opacity-100">✕</button>
                           {team.logo_url ? <img src={team.logo_url} alt={team.name} className="w-16 h-16 object-cover rounded-lg mx-auto mb-2" /> : <div className="w-16 h-16 bg-border rounded-lg mx-auto mb-2" />}
                           <p className="text-white font-bold text-center">{team.name}</p>
@@ -461,11 +501,13 @@ export default function About() {
                       <input type="text" placeholder="Roblox ID" value={newKit.robloxId} onChange={e => setNewKit({...newKit, robloxId: e.target.value})} className="bg-app-bg border border-border rounded-lg px-3 py-2 text-white" />
                       <input type="text" placeholder="Price" value={newKit.price} onChange={e => setNewKit({...newKit, price: e.target.value})} className="bg-app-bg border border-border rounded-lg px-3 py-2 text-white" />
                       <input type="text" placeholder="Icon URL" value={newKit.thumbnailUrl} onChange={e => setNewKit({...newKit, thumbnailUrl: e.target.value})} className="bg-app-bg border border-border rounded-lg px-3 py-2 text-white" />
-                      <button onClick={handleSaveKit} className="px-6 py-2 bg-primary text-black rounded-lg font-bold">Add Kit</button>
+                      <button onClick={handleSaveKit} className="px-6 py-2 bg-primary text-black rounded-lg font-bold">{editingKit ? 'Save' : 'Add'} Kit</button>
+                      {editingKit && <button onClick={() => { setEditingKit(null); setNewKit({ name: '', robloxId: '', price: '', thumbnailUrl: '', link: '' }); }} className="px-4 py-2 bg-app-bg text-text-muted rounded-lg font-medium">Cancel</button>}
                     </div>
                     <div className="grid grid-cols-5 gap-4">
-                      {teamKits.map(kit => (
+                      {filteredKits.map(kit => (
                         <div key={kit.id} className="bg-app-bg rounded-xl overflow-hidden relative group">
+                          <button onClick={() => handleEditKit(kit)} className="absolute top-2 right-10 w-6 h-6 bg-blue-600 rounded-full text-white text-xs opacity-0 group-hover:opacity-100 z-10">✎</button>
                           <button onClick={() => handleDeleteKit(kit.id)} className="absolute top-2 right-2 w-6 h-6 bg-red-600 rounded-full text-white text-xs opacity-0 group-hover:opacity-100 z-10">✕</button>
                           {kit.thumbnail_url ? <img src={kit.thumbnail_url} alt={kit.name} className="w-full h-24 object-cover" /> : <div className="w-full h-24 bg-border" />}
                           <div className="p-2">
@@ -482,9 +524,9 @@ export default function About() {
 
             {activeTab !== 'leagues' && (
               <div className="flex-1 overflow-auto p-6">
-                {loading ? <div className="text-center text-text-muted py-8">Loading...</div> : items.length === 0 ? <div className="text-center text-text-muted py-8">No items</div> : (
+                {loading ? <div className="text-center text-text-muted py-8">Loading...</div> : filteredItems.length === 0 ? <div className="text-center text-text-muted py-8">No items</div> : (
                   <div className="grid grid-cols-4 gap-4">
-                    {items.map(item => (
+                    {filteredItems.map(item => (
                       <div key={item.id} className="bg-app-bg rounded-xl overflow-hidden hover:ring-2 ring-primary/50 transition group relative">
                         <button onClick={() => handleEdit(item)} className="absolute top-2 right-12 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10">✎</button>
                         <button onClick={() => handleDelete(item.id)} className="absolute top-2 right-2 w-8 h-8 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10">✕</button>

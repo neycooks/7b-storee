@@ -136,33 +136,10 @@ export default function Products() {
 
   return (
     <div className="animate-fade-in">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="flex bg-card-bg rounded-full p-1">
-          <button
-            onClick={() => { setViewMode('group'); setSelectedLeague(null); setSelectedTeam(null); }}
-            className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition ${
-              viewMode === 'group' ? 'bg-primary text-black' : 'text-white'
-            }`}
-          >
-            <Trophy size={18} />
-            Group
-          </button>
-          <button
-            onClick={() => { setViewMode('leagues'); setSelectedLeague(null); setSelectedTeam(null); }}
-            className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition ${
-              viewMode === 'leagues' ? 'bg-primary text-black' : 'text-white'
-            }`}
-          >
-            <Users size={18} />
-            Leagues
-          </button>
-        </div>
-      </div>
-
       {viewMode === 'group' ? (
         <>
-          <div className="flex flex-col items-center mb-6">
-            <div className="relative w-full max-w-[400px]">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="relative flex-1 max-w-[400px]">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
               <input
                 type="text"
@@ -171,6 +148,26 @@ export default function Products() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-card-bg border border-border rounded-pill py-3 pl-12 pr-4 text-white placeholder-text-muted focus:outline-none focus:border-primary/50"
               />
+            </div>
+            <div className="flex bg-card-bg rounded-full p-1">
+              <button
+                onClick={() => { setViewMode('group'); setSelectedLeague(null); setSelectedTeam(null); }}
+                className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition ${
+                  viewMode === 'group' ? 'bg-primary text-black' : 'text-white'
+                }`}
+              >
+                <Trophy size={18} />
+                Group
+              </button>
+              <button
+                onClick={() => { setViewMode('leagues'); setSelectedLeague(null); setSelectedTeam(null); }}
+                className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition ${
+                  viewMode === 'leagues' ? 'bg-primary text-black' : 'text-white'
+                }`}
+              >
+                <Users size={18} />
+                Leagues
+              </button>
             </div>
           </div>
 
@@ -255,6 +252,29 @@ export default function Products() {
         </>
       ) : (
         <div className="animate-fade-in">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex-1"></div>
+            <div className="flex bg-card-bg rounded-full p-1">
+              <button
+                onClick={() => { setViewMode('group'); setSelectedLeague(null); setSelectedTeam(null); }}
+                className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition ${
+                  viewMode === 'group' ? 'bg-primary text-black' : 'text-white'
+                }`}
+              >
+                <Trophy size={18} />
+                Group
+              </button>
+              <button
+                onClick={() => { setViewMode('leagues'); setSelectedLeague(null); setSelectedTeam(null); }}
+                className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition ${
+                  viewMode === 'leagues' ? 'bg-primary text-black' : 'text-white'
+                }`}
+              >
+                <Users size={18} />
+                Leagues
+              </button>
+            </div>
+          </div>
           {leagueView === 'leagues' && !selectedLeague && (
             <div className="text-center py-10">
               <h2 className="text-white font-bold text-2xl mb-6">Leagues</h2>
