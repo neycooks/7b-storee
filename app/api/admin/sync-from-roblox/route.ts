@@ -18,16 +18,6 @@ async function fetchThumbnail(assetId: number): Promise<string | null> {
   return null;
 }
 
-function normalizeType(rawType: string | undefined): string {
-  if (rawType === 'gamepass') {
-    return 'gamepass';
-  }
-  if (rawType === 'shirt' || rawType === 'pants' || rawType === 'tshirt' || rawType === 'clothing' || !rawType) {
-    return 'item';
-  }
-  return 'item';
-}
-
 export async function GET(req: Request) {
   try {
     const url = new URL('/api/group-kits', req.url);
@@ -57,7 +47,7 @@ export async function GET(req: Request) {
         price: item.price,
         thumbnailUrl: item.icon || null,
         link: item.link || `https://www.roblox.com/catalog/${item.id}`,
-        type: 'item',
+        itemType: 'item',
       }));
       source = 'json';
     }
@@ -70,7 +60,19 @@ export async function GET(req: Request) {
       const price = item.price ?? null;
       let thumbnailUrl = item.thumbnailUrl || item.thumbnail_url || item.icon || null;
       const link = item.link || `https://www.roblox.com/catalog/${robloxId}`;
-      const normalizedType = normalizeType(item.type);
+      
+      let rawType = item.type || item.itemType || '';
+      let normalizedType: string;
+
+      if (rawType === 'gamepass') {
+        normalizedType = 'gamepass';
+      } else if (rawType === 'shirt') {
+        normalizedType = 'shirt';
+      } else if (rawType === 'pants') {
+        normalizedType = 'pants';
+      } else {
+        normalizedType = 'item';
+      }
 
       if (!thumbnailUrl) {
         thumbnailUrl = await fetchThumbnail(robloxId);
