@@ -4,12 +4,16 @@ import { sql } from '@/lib/db';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const type = searchParams.get('type') ?? 'item';
+    const typeParam = searchParams.get('type') ?? 'item';
+
+    const normalizedGetType = typeParam === 'gamepass' ? 'gamepass' : 
+                             typeParam === 'shirt' ? 'shirt' : 
+                             typeParam === 'pants' ? 'pants' : 'item';
 
     const rows = await sql`
       SELECT id, roblox_id, name, price, thumbnail_url, link, type
       FROM shop_items
-      WHERE type = ${type}
+      WHERE type = ${normalizedGetType}
       ORDER BY created_at DESC;
     `;
 
@@ -35,6 +39,17 @@ export async function POST(req: NextRequest) {
     let itemPrice = price;
     let itemLink = link;
 
+    let normalizedType: string;
+    if (type === 'gamepass') {
+      normalizedType = 'gamepass';
+    } else if (type === 'shirt') {
+      normalizedType = 'shirt';
+    } else if (type === 'pants') {
+      normalizedType = 'pants';
+    } else {
+      normalizedType = 'item';
+    }
+
     if (!thumbnailUrl) {
       try {
         const thumbnailUrlFetch = `https://thumbnails.roblox.com/v1/assets?assetIds=${robloxId}&returnPolicy=PlaceHolder&size=150x150&format=Png&aspectRatio=1x1`;
@@ -51,14 +66,14 @@ export async function POST(req: NextRequest) {
     }
 
     if (!itemLink) {
-      itemLink = type === 'gamepass' 
+      itemLink = normalizedType === 'gamepass' 
         ? `https://www.roblox.com/game-pass/${robloxId}`
         : `https://www.roblox.com/catalog/${robloxId}`;
     }
 
     await sql`
       INSERT INTO shop_items (roblox_id, name, price, thumbnail_url, link, type)
-      VALUES (${robloxId}, ${itemName}, ${itemPrice}, ${thumbnailUrl}, ${itemLink}, ${type})
+      VALUES (${robloxId}, ${itemName}, ${itemPrice}, ${thumbnailUrl}, ${itemLink}, ${normalizedType})
       ON CONFLICT (roblox_id) DO UPDATE SET
         name = EXCLUDED.name,
         price = EXCLUDED.price,
