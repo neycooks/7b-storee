@@ -149,10 +149,10 @@ export default function Products() {
                 className="w-full bg-card-bg border border-border rounded-pill py-3 pl-12 pr-4 text-white placeholder-text-muted focus:outline-none focus:border-primary/50"
               />
             </div>
-            <div className="flex bg-card-bg rounded-full p-1">
+            <div className="flex bg-card-bg rounded-full p-1 h-fit">
               <button
                 onClick={() => { setViewMode('group'); setSelectedLeague(null); setSelectedTeam(null); }}
-                className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition ${
+                className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition ${
                   viewMode === 'group' ? 'bg-primary text-black' : 'text-white'
                 }`}
               >
@@ -161,7 +161,7 @@ export default function Products() {
               </button>
               <button
                 onClick={() => { setViewMode('leagues'); setSelectedLeague(null); setSelectedTeam(null); }}
-                className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition ${
+                className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition ${
                   viewMode === 'leagues' ? 'bg-primary text-black' : 'text-white'
                 }`}
               >
@@ -254,10 +254,10 @@ export default function Products() {
         <div className="animate-fade-in">
           <div className="flex items-center gap-4 mb-6">
             <div className="flex-1"></div>
-            <div className="flex bg-card-bg rounded-full p-1">
+            <div className="flex bg-card-bg rounded-full p-1 h-fit">
               <button
                 onClick={() => { setViewMode('group'); setSelectedLeague(null); setSelectedTeam(null); }}
-                className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition ${
+                className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition ${
                   viewMode === 'group' ? 'bg-primary text-black' : 'text-white'
                 }`}
               >
@@ -266,7 +266,7 @@ export default function Products() {
               </button>
               <button
                 onClick={() => { setViewMode('leagues'); setSelectedLeague(null); setSelectedTeam(null); }}
-                className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition ${
+                className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition ${
                   viewMode === 'leagues' ? 'bg-primary text-black' : 'text-white'
                 }`}
               >
