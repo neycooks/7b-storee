@@ -60,10 +60,17 @@ export default function About() {
   }, [showLogin, showAdmin]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && showLogin) {
+      setShowLogin(false);
+      setShowAdmin(true);
+    }
+  }, [isAuthenticated, showLogin]);
+
+  useEffect(() => {
+    if (isAuthenticated && showAdmin) {
       fetchItems();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, showAdmin]);
 
   const checkAuth = async () => {
     const res = await fetch('/api/admin/me');
@@ -81,8 +88,6 @@ export default function About() {
     const data = await res.json();
     if (data.ok) {
       setIsAuthenticated(true);
-      setShowLogin(false);
-      setShowAdmin(true);
     } else {
       setLoginError('Invalid password');
     }
@@ -150,14 +155,6 @@ export default function About() {
     }
   };
 
-  const openAdmin = () => {
-    if (isAuthenticated) {
-      setShowAdmin(true);
-    } else {
-      setShowLogin(true);
-    }
-  };
-
   const items = activeTab === 'clothing' ? clothingItems : gamepassItems;
 
   return (
@@ -185,7 +182,7 @@ export default function About() {
       </div>
 
       <div className="mt-8 text-center">
-        <p className="text-text-muted text-sm">Owned by <span onClick={openAdmin} className="text-white font-bold cursor-pointer hover:underline">Alonso</span></p>
+        <p className="text-text-muted text-sm">Owned by <span onClick={() => { setShowLogin(true); }} className="text-white font-bold cursor-pointer">Alonso</span></p>
         <p className="text-text-muted text-sm mt-1">Site made by <span className="text-white font-bold">ney</span></p>
       </div>
 
