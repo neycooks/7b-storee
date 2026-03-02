@@ -3,12 +3,14 @@ import { sql } from '@/lib/db';
 
 export async function GET() {
   try {
+    console.log('[Gamepasses API] Fetching gamepasses from DB...');
     const rows = await sql`
       SELECT id, roblox_id, name, price, thumbnail_url, link, type
       FROM shop_items
       WHERE type = 'gamepass'
       ORDER BY created_at DESC;
     `;
+    console.log('[Gamepasses API] DB gamepasses count:', rows.length);
     
     const items = rows.map((row: any) => ({
       id: Number(row.roblox_id),

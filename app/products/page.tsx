@@ -58,9 +58,10 @@ export default function Products() {
     setLoading(true);
     setError(null);
     
-    fetch(`/api/items?page=${pageNum}&pageSize=${pageSize}`)
+    fetch(`/api/items?page=${pageNum}&pageSize=${pageSize}&nocache=${Date.now()}`)
       .then(res => res.json())
       .then(data => {
+        console.log('[Products] Items data:', data);
         if (data.error) {
           setError(data.error);
         } else {
@@ -94,7 +95,7 @@ export default function Products() {
   const fetchLeagues = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/leagues');
+      const res = await fetch(`/api/leagues?t=${Date.now()}`);
       const data = await res.json();
       console.log('[Products] Leagues data:', data);
       setLeagues(data.leagues || []);
@@ -324,7 +325,7 @@ export default function Products() {
                     <div
                       key={team.id}
                       onClick={() => handleTeamClick(team)}
-                      className="bg-card-bg rounded-xl p-4 cursor-pointer hover:ring-2 ring-primary transition"
+                      className="bg-card-bg rounded-xl p-4 cursor-pointer hover:ring-2 ring-primary transition-all hover:scale-105 animate-fade-in"
                     >
                       {team.logo_url ? (
                         <img src={team.logo_url} alt={team.name} className="w-20 h-20 object-cover rounded-lg mx-auto mb-3" />

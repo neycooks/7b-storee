@@ -81,11 +81,14 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = Number(searchParams.get('page') ?? '1');
   const pageSize = Number(searchParams.get('pageSize') ?? '20');
+  const nocache = searchParams.get('nocache');
 
   const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 20;
   const safePage = Number.isFinite(page) && page > 0 ? page : 1;
 
+  console.log('[Items API] Fetching items from DB...');
   let allItems = await getItemsFromDB();
+  console.log('[Items API] DB items count:', allItems.length);
   
   if (allItems.length === 0) {
     console.log('[Items] DB empty, falling back to clothing.json');

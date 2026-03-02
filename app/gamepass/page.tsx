@@ -28,8 +28,9 @@ export default function Gamepass() {
   const fetchGamepasses = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/gamepasses');
+      const res = await fetch(`/api/gamepasses?t=${Date.now()}`);
       const data = await res.json();
+      console.log('[Gamepass] Data:', data);
       setGamepasses(data.items || []);
       setTotalPages(Math.ceil((data.items?.length || 0) / pageSize));
     } catch (error) {

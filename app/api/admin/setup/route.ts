@@ -3,6 +3,8 @@ import { sql } from '@/lib/db';
 
 export async function GET() {
   try {
+    console.log('[Setup] Creating tables...');
+    
     await sql`
       CREATE TABLE IF NOT EXISTS shop_items (
         id SERIAL PRIMARY KEY,
@@ -15,6 +17,7 @@ export async function GET() {
         created_at TIMESTAMP DEFAULT NOW()
       );
     `;
+    console.log('[Setup] shop_items table created');
 
     try {
       await sql`ALTER TABLE shop_items ADD COLUMN IF NOT EXISTS link TEXT;`;
@@ -33,6 +36,7 @@ export async function GET() {
         created_at TIMESTAMP DEFAULT NOW()
       );
     `;
+    console.log('[Setup] leagues table created');
 
     await sql`
       CREATE TABLE IF NOT EXISTS teams (
@@ -43,6 +47,7 @@ export async function GET() {
         created_at TIMESTAMP DEFAULT NOW()
       );
     `;
+    console.log('[Setup] teams table created');
 
     await sql`
       CREATE TABLE IF NOT EXISTS team_kits (
@@ -56,6 +61,7 @@ export async function GET() {
         created_at TIMESTAMP DEFAULT NOW()
       );
     `;
+    console.log('[Setup] team_kits table created');
 
     return NextResponse.json({ ok: true, message: 'All tables ready' });
   } catch (error) {
