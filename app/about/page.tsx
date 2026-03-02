@@ -43,7 +43,6 @@ export default function About() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [showLogin, setShowLogin] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState<'clothing' | 'gamepasses'>('clothing');
@@ -52,50 +51,12 @@ export default function About() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newItem, setNewItem] = useState({ robloxId: '', name: '', price: '', iconUrl: '' });
   const [loading, setLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (mounted && showAdmin) {
-      checkAuth();
-    }
-  }, [mounted, showAdmin]);
-
-  useEffect(() => {
-    if (isAuthenticated && showAdmin) {
+    if (showAdmin) {
       fetchItems();
     }
-  }, [isAuthenticated, showAdmin]);
-
-  const checkAuth = async () => {
-    const res = await fetch('/api/admin/me');
-    const data = await res.json();
-    setIsAuthenticated(data.authenticated);
-  };
-
-  const handleOpenLogin = () => {
-    setShowLogin(true);
-  };
-
-  const handleLogin = async () => {
-    setLoginError('');
-    const res = await fetch('/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    });
-    const data = await res.json();
-    if (data.ok) {
-      setShowLogin(false);
-      setShowAdmin(true);
-      setIsAuthenticated(true);
-    } else {
-      setLoginError('Incorrect password');
-    }
-  };
+  }, [showAdmin]);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -159,6 +120,29 @@ export default function About() {
     }
   };
 
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+    
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    
+    if (res.ok) {
+      setShowLogin(false);
+      setShowAdmin(true);
+      setPassword('');
+    } else {
+      setLoginError('Incorrect password');
+    }
+  };
+
+  const handleOpenLogin = () => {
+    setShowLogin(true);
+  };
+
   const items = activeTab === 'clothing' ? clothingItems : gamepassItems;
 
   return (
@@ -191,10 +175,10 @@ export default function About() {
       </div>
 
       {/* Login Modal */}
-      {mounted && showLogin && (
+      {showLogin && (
         <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4" onClick={() => setShowLogin(false)}>
           <div className="bg-card-bg rounded-2xl p-8 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+            <form onSubmit={handleLogin}>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-white font-bold text-xl">Admin Login</h2>
                 <button type="button" onClick={() => setShowLogin(false)} className="text-text-muted hover:text-white">
@@ -219,7 +203,7 @@ export default function About() {
       )}
 
       {/* Admin Panel Modal */}
-      {mounted && showAdmin && isAuthenticated && (
+      {showAdmin && (
         <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4" onClick={() => setShowAdmin(false)}>
           <div className="bg-card-bg rounded-2xl w-full max-w-5xl max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
