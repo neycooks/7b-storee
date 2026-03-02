@@ -41,26 +41,29 @@ interface ShopItem {
 
 export default function About() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [showLogin, setShowLogin] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
-  const [activeTab, setActiveTab] = useState<'items' | 'gamepasses'>('items');
-  const [items, setItems] = useState<ShopItem[]>([]);
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [loginError, setLoginError] = useState('');
+  const [activeTab, setActiveTab] = useState<'clothing' | 'gamepasses'>('clothing');
+  const [clothingItems, setClothingItems] = useState<ShopItem[]>([]);
+  const [gamepassItems, setGamepassItems] = useState<ShopItem[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newItem, setNewItem] = useState({ robloxId: '', name: '', price: '', iconUrl: '' });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (showAdmin) {
+    if (showLogin || showAdmin) {
       checkAuth();
     }
-  }, [showAdmin]);
+  }, [showLogin, showAdmin]);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchItems();
     }
-  }, [isAuthenticated, activeTab]);
+  }, [isAuthenticated]);
 
   const checkAuth = async () => {
     const res = await fetch('/api/admin/me');
@@ -69,6 +72,7 @@ export default function About() {
   };
 
   const handleLogin = async () => {
+    setLoginError('');
     const res = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -77,29 +81,39 @@ export default function About() {
     const data = await res.json();
     if (data.ok) {
       setIsAuthenticated(true);
+      setShowLogin(false);
+      setShowAdmin(true);
+    } else {
+      setLoginError('Invalid password');
     }
   };
 
   const fetchItems = async () => {
-    const type = activeTab === 'items' ? 'item' : 'gamepass';
-    const res = await fetch(`/api/admin/shop-items?type=${type}`);
-    const data = await res.json();
-    setItems(data.items || []);
-    setSelectedIds([]);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/shop-items?type=item');
+      const data = await res.json();
+      setClothingItems(data.items || []);
+      
+      const res2 = await fetch('/api/admin/shop-items?type=gamepass');
+      const data2 = await res2.json();
+      setGamepassItems(data2.items || []);
+    } catch (e) {
+      console.error('Failed to fetch items:', e);
+    }
+    setLoading(false);
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Delete this item?')) return;
-    await fetch(`/api/admin/shop-items?id=${id}`, { method: 'DELETE' });
-    fetchItems();
-  };
-
-  const handleDeleteSelected = async () => {
-    if (!confirm(`Delete ${selectedIds.length} item(s)?`)) return;
-    for (const id of selectedIds) {
-      await fetch(`/api/admin/shop-items?id=${id}`, { method: 'DELETE' });
+    if (!confirm('Delete this item? This will remove it from the shop.')) return;
+    
+    const res = await fetch(`/api/admin/shop-items?id=${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      setClothingItems(prev => prev.filter(item => item.id !== id));
+      setGamepassItems(prev => prev.filter(item => item.id !== id));
+    } else {
+      alert('Failed to delete item');
     }
-    fetchItems();
   };
 
   const handleCreate = async () => {
@@ -108,29 +122,43 @@ export default function About() {
       const match = robloxId.match(/\/(\d+)/);
       if (match) robloxId = match[1];
     }
-    if (!robloxId || isNaN(parseInt(robloxId))) return;
+    if (!robloxId || isNaN(parseInt(robloxId))) {
+      alert('Please enter a valid Roblox ID');
+      return;
+    }
 
-    await fetch('/api/admin/shop-items', {
+    const type = activeTab === 'clothing' ? 'item' : 'gamepass';
+    
+    const res = await fetch('/api/admin/shop-items', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type: activeTab === 'items' ? 'item' : 'gamepass',
+        type,
         robloxId: parseInt(robloxId),
         name: newItem.name || null,
         price: newItem.price ? parseInt(newItem.price) : null,
         iconUrl: newItem.iconUrl || null,
       }),
     });
-    setShowCreateForm(false);
-    setNewItem({ robloxId: '', name: '', price: '', iconUrl: '' });
-    fetchItems();
+
+    if (res.ok) {
+      setShowCreateForm(false);
+      setNewItem({ robloxId: '', name: '', price: '', iconUrl: '' });
+      await fetchItems();
+    } else {
+      alert('Failed to create item');
+    }
   };
 
-  const toggleSelect = (id: number) => {
-    setSelectedIds(prev => 
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
+  const openAdmin = () => {
+    if (isAuthenticated) {
+      setShowAdmin(true);
+    } else {
+      setShowLogin(true);
+    }
   };
+
+  const items = activeTab === 'clothing' ? clothingItems : gamepassItems;
 
   return (
     <div className="animate-fade-in">
@@ -157,83 +185,163 @@ export default function About() {
       </div>
 
       <div className="mt-8 text-center">
-        <p className="text-text-muted text-sm">Owned by <span onClick={() => setShowAdmin(true)} className="text-white font-bold cursor-pointer">Alonso</span></p>
+        <p className="text-text-muted text-sm">Owned by <span onClick={openAdmin} className="text-white font-bold cursor-pointer hover:underline">Alonso</span></p>
         <p className="text-text-muted text-sm mt-1">Site made by <span className="text-white font-bold">ney</span></p>
       </div>
 
-      {showAdmin && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl p-6 w-full max-w-3xl max-h-[80vh] overflow-auto">
-            {!isAuthenticated ? (
-              <div className="text-center">
-                <h2 className="text-white font-bold text-xl mb-4">Admin Login</h2>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Password"
-                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-white/30 mb-4"
-                />
-                <div className="flex gap-2 justify-center">
-                  <button onClick={handleLogin} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-black text-sm font-medium hover:bg-neutral-200 active:scale-[0.98] transition">Submit</button>
-                  <button onClick={() => setShowAdmin(false)} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-800 text-neutral-300 text-sm font-medium hover:bg-neutral-700 transition">Cancel</button>
+      {/* Login Modal */}
+      {showLogin && (
+        <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4">
+          <div className="bg-card-bg rounded-2xl p-8 w-full max-w-md shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-white font-bold text-xl">Admin Login</h2>
+              <button onClick={() => setShowLogin(false)} className="text-text-muted hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Enter password"
+              className="w-full bg-app-bg border border-border rounded-xl px-4 py-3 text-white placeholder-text-muted focus:outline-none focus:border-primary mb-4"
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            />
+            {loginError && <p className="text-red-400 text-sm mb-4">{loginError}</p>}
+            <div className="flex gap-3">
+              <button onClick={handleLogin} className="flex-1 bg-primary text-black font-bold py-3 rounded-xl hover:opacity-90 transition">Submit</button>
+              <button onClick={() => setShowLogin(false)} className="px-6 py-3 bg-app-bg text-text-muted font-medium rounded-xl hover:bg-border transition">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Panel Modal */}
+      {showAdmin && isAuthenticated && (
+        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
+          <div className="bg-card-bg rounded-2xl w-full max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex justify-between items-center p-6 border-b border-border">
+              <h2 className="text-white font-bold text-xl">Admin Panel</h2>
+              <button onClick={() => setShowAdmin(false)} className="text-text-muted hover:text-white p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-4 p-6 pb-0">
+              <button
+                onClick={() => setActiveTab('clothing')}
+                className={`px-6 py-3 rounded-xl font-bold transition ${
+                  activeTab === 'clothing' 
+                    ? 'bg-primary text-black' 
+                    : 'bg-app-bg text-text-muted hover:text-white'
+                }`}
+              >
+                Clothing
+              </button>
+              <button
+                onClick={() => setActiveTab('gamepasses')}
+                className={`px-6 py-3 rounded-xl font-bold transition ${
+                  activeTab === 'gamepasses' 
+                    ? 'bg-primary text-black' 
+                    : 'bg-app-bg text-text-muted hover:text-white'
+                }`}
+              >
+                Gamepasses
+              </button>
+              <div className="flex-1"></div>
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="px-6 py-3 bg-primary text-black rounded-xl font-bold hover:opacity-90 transition"
+              >
+                + Create
+              </button>
+            </div>
+
+            {/* Create Form */}
+            {showCreateForm && (
+              <div className="p-6 pb-0">
+                <div className="bg-app-bg rounded-xl p-4 mb-4">
+                  <h3 className="text-white font-bold mb-3">Create New {activeTab === 'clothing' ? 'Clothing' : 'Gamepass'}</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      placeholder="Roblox ID or Link (required)"
+                      value={newItem.robloxId}
+                      onChange={e => setNewItem({...newItem, robloxId: e.target.value})}
+                      className="col-span-2 bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Name"
+                      value={newItem.name}
+                      onChange={e => setNewItem({...newItem, name: e.target.value})}
+                      className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Price (R$)"
+                      value={newItem.price}
+                      onChange={e => setNewItem({...newItem, price: e.target.value})}
+                      className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Icon URL (optional)"
+                      value={newItem.iconUrl}
+                      onChange={e => setNewItem({...newItem, iconUrl: e.target.value})}
+                      className="col-span-2 bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={handleCreate} className="px-4 py-2 bg-primary text-black rounded-lg font-bold text-sm hover:opacity-90 transition">Add</button>
+                    <button onClick={() => setShowCreateForm(false)} className="px-4 py-2 bg-app-bg text-text-muted rounded-lg font-medium text-sm hover:text-white transition">Cancel</button>
+                  </div>
                 </div>
               </div>
-            ) : (
-              <>
-                <div className="flex justify-between items-center mb-6">
-                  <div className="flex gap-2">
-                    <button onClick={() => setActiveTab('items')} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeTab === 'items' ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'}`}>Items</button>
-                    <button onClick={() => setActiveTab('gamepasses')} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeTab === 'gamepasses' ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'}`}>Gamepasses</button>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => setShowCreateForm(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-black text-sm font-medium hover:bg-neutral-200 active:scale-[0.98] transition">Create</button>
-                    {selectedIds.length > 0 && (
-                      <button onClick={handleDeleteSelected} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-600 text-white text-xs font-medium hover:bg-red-500 transition">Delete ({selectedIds.length})</button>
-                    )}
-                    <button onClick={() => setShowAdmin(false)} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-800 text-neutral-300 text-sm font-medium hover:bg-neutral-700 transition">Close</button>
-                  </div>
-                </div>
+            )}
 
-                {showCreateForm && (
-                  <div className="bg-neutral-800 p-4 rounded-xl mb-4">
-                    <h3 className="text-white font-bold mb-3">Create New</h3>
-                    <input type="text" placeholder="Roblox ID or Link (required)" value={newItem.robloxId} onChange={e => setNewItem({...newItem, robloxId: e.target.value})} className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-white/30 mb-2" />
-                    <input type="text" placeholder="Name" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-white/30 mb-2" />
-                    <input type="text" placeholder="Price (R$)" value={newItem.price} onChange={e => setNewItem({...newItem, price: e.target.value})} className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-white/30 mb-2" />
-                    <input type="text" placeholder="Icon URL (leave blank to auto-fetch)" value={newItem.iconUrl} onChange={e => setNewItem({...newItem, iconUrl: e.target.value})} className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-white/30 mb-3" />
-                    <div className="flex gap-2">
-                      <button onClick={handleCreate} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-black text-sm font-medium hover:bg-neutral-200 active:scale-[0.98] transition">Add</button>
-                      <button onClick={() => setShowCreateForm(false)} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-700 text-neutral-300 text-sm font-medium hover:bg-neutral-600 transition">Cancel</button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-2">
+            {/* Items Grid */}
+            <div className="flex-1 overflow-auto p-6">
+              {loading ? (
+                <div className="text-center text-text-muted py-8">Loading...</div>
+              ) : items.length === 0 ? (
+                <div className="text-center text-text-muted py-8">No {activeTab} found</div>
+              ) : (
+                <div className="grid grid-cols-4 gap-4">
                   {items.map(item => (
-                    <div key={item.id} className="flex items-center gap-3 bg-neutral-800 p-3 rounded-xl">
-                      <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelect(item.id)} className="w-4 h-4 rounded" />
-                      {item.thumbnail_url ? (
-                        <img src={item.thumbnail_url} alt={item.name} className="w-10 h-10 object-cover rounded-lg" />
-                      ) : (
-                        <div className="w-10 h-10 bg-neutral-700 rounded-lg flex items-center justify-center text-neutral-500 text-xs">No img</div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white font-bold truncate">{item.name || 'Unnamed'}</p>
-                        <p className="text-neutral-400 text-sm">{item.price ? `${item.price}R$` : 'Free'}</p>
-                      </div>
-                      {item.link && (
-                        <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-white text-sm">Link</a>
-                      )}
-                      <button onClick={() => handleDelete(item.id)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-600 text-white text-xs font-medium hover:bg-red-500 transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                        <span className="hidden sm:inline">Delete</span>
+                    <div key={item.id} className="bg-app-bg rounded-xl overflow-hidden hover:ring-2 hover:ring-primary/50 transition group relative">
+                      {/* Delete button */}
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="absolute top-2 right-2 w-8 h-8 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                       </button>
+                      
+                      {/* Thumbnail */}
+                      <div className="aspect-square bg-border flex items-center justify-center">
+                        {item.thumbnail_url ? (
+                          <img src={item.thumbnail_url} alt={item.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        )}
+                      </div>
+                      
+                      {/* Info */}
+                      <div className="p-3">
+                        <p className="text-white font-bold text-sm truncate">{item.name || 'Unnamed'}</p>
+                        <p className="text-primary font-bold text-sm">{item.price ? `${item.price}R$` : 'Free'}</p>
+                        <span className={`inline-block text-xs px-2 py-0.5 rounded mt-1 ${item.type === 'gamepass' ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'}`}>
+                          {item.type === 'gamepass' ? 'Gamepass' : 'Clothing'}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}
