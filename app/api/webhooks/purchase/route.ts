@@ -99,8 +99,7 @@ async function sendPurchaseWebhook(
         thumbnail: itemIcon ? { url: itemIcon } : undefined,
         fields: fields,
         footer: {
-          text: '7B STORE • Click Notification',
-          icon_url: 'https://i.imgur.com/4ausQA1.png'
+          text: '7B STORE • Click Notification'
         },
         timestamp: new Date().toISOString()
       }
@@ -126,7 +125,7 @@ async function sendPurchaseWebhook(
     ]
   };
 
-  console.log('[PurchaseWebhook] Payload:', JSON.stringify(payload, null, 2));
+  console.log('[PurchaseWebhook] Sending payload:', JSON.stringify(payload));
 
   try {
     const response = await fetch(webhookUrl, {
@@ -135,12 +134,14 @@ async function sendPurchaseWebhook(
       body: JSON.stringify(payload)
     });
 
+    const responseText = await response.text();
+    console.log('[PurchaseWebhook] Response:', response.status, responseText);
+
     if (response.ok) {
       console.log('[PurchaseWebhook] Sent successfully for', type, item.name);
       return { success: true };
     } else {
-      const error = await response.text();
-      console.error('[PurchaseWebhook] Failed:', response.status, error);
+      console.error('[PurchaseWebhook] Failed:', response.status, responseText);
       return { success: false, error: `HTTP ${response.status}` };
     }
   } catch (error) {
