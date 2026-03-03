@@ -292,32 +292,28 @@ export default function Products() {
           ) : leagues.length === 0 ? (
             <p className="text-text-muted">No leagues available</p>
           ) : (
-            <div className="space-y-3">
+            <div className="grid grid-cols-4 gap-4">
               {leagues.map(league => {
                 const isLeagueOpen = openLeague === league.id;
                 const isTeamsOpen = isLeagueOpen && openTeam !== null;
+                const leagueTeams = teams.filter(t => t.league_id === league.id);
                 
                 return (
                   <div
                     key={league.id}
-                    className={`rounded-xl border border-border bg-card-bg overflow-hidden transition-all duration-300 ease-out ${isLeagueOpen ? 'shadow-lg' : ''}`}
+                    className={`bg-card-bg rounded-xl overflow-hidden transition-all duration-300 ease-out ${isLeagueOpen ? 'col-span-4 ring-2 ring-primary' : 'hover:ring-2 ring-primary/50 cursor-pointer'}`}
+                    onClick={() => !isLeagueOpen && toggleLeague(league.id)}
                   >
-                    <div
-                      className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-border/30 transition-colors"
-                      onClick={() => toggleLeague(league.id)}
-                    >
-                      <div className="flex items-center gap-3">
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-2">
                         {league.icon_url ? (
-                          <img src={league.icon_url} alt={league.name} className="w-10 h-10 object-cover rounded-lg" />
+                          <img src={league.icon_url} alt={league.name} className="w-12 h-12 object-cover rounded-lg" />
                         ) : (
-                          <div className="w-10 h-10 bg-border rounded-lg flex items-center justify-center">
-                            <Trophy className="text-text-muted" size={20} />
+                          <div className="w-12 h-12 bg-border rounded-lg flex items-center justify-center">
+                            <Trophy className="text-text-muted" size={24} />
                           </div>
                         )}
-                        <span className="text-white font-bold">{league.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {league.join_link && (
+                        {league.join_link && !isLeagueOpen && (
                           <a
                             href={league.join_link}
                             target="_blank"
@@ -328,77 +324,104 @@ export default function Products() {
                             Join
                           </a>
                         )}
-                        <ChevronRight className={`text-text-muted transition-transform duration-300 ${isLeagueOpen ? 'rotate-90' : ''}`} size={20} />
                       </div>
-                    </div>
-                    
-                    <div className={`transition-all duration-300 ease-out ${isLeagueOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                      <div className="px-4 pb-4 border-t border-border pt-3">
-                        {teams.filter(t => t.league_id === league.id).length > 0 ? (
-                          <>
-                            <div className="flex flex-wrap gap-2 mb-3">
-                              {teams.filter(t => t.league_id === league.id).map(team => {
-                                const isTeamOpen = openTeam === team.id;
-                                return (
-                                  <button
-                                    key={team.id}
-                                    className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                                      isTeamOpen 
-                                        ? 'border-primary bg-primary/20 text-white' 
-                                        : 'border-border bg-app-bg text-text-muted hover:text-white'
-                                    }`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      toggleTeam(team.id);
-                                      if (openTeam !== team.id) {
-                                        fetchTeamKits(team.id);
-                                      }
-                                    }}
-                                  >
-                                    {team.logo_url ? (
-                                      <img src={team.logo_url} alt={team.name} className="w-4 h-4 rounded-full object-cover" />
-                                    ) : (
-                                      <Users size={14} />
-                                    )}
-                                    <span>{team.name}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            
-                            {openTeam && teamKits.length > 0 && (
-                              <div className="space-y-2">
-                                <div className="text-xs text-text-muted">
-                                  Viewing kits of <span className="text-white font-semibold">{teams.find(t => t.id === openTeam)?.name}</span>
-                                </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                  {teamKits.map(kit => (
-                                    <div
-                                      key={kit.id}
-                                      onClick={() => window.open(kit.link, '_blank')}
-                                      className="rounded-lg border border-border bg-app-bg p-2 flex flex-col items-center text-center text-sm cursor-pointer hover:ring-2 ring-primary transition-all"
-                                    >
-                                      {kit.thumbnail_url ? (
-                                        <img src={kit.thumbnail_url} alt={kit.name} className="w-full h-16 rounded-md object-cover mb-2" />
-                                      ) : (
-                                        <div className="w-full h-16 bg-border rounded-md mb-2 flex items-center justify-center">
-                                          <Search className="text-text-muted" size={20} />
-                                        </div>
-                                      )}
-                                      <div className="line-clamp-2 mb-1 text-white font-medium">{kit.name}</div>
-                                      {kit.price != null && (
-                                        <div className="text-primary font-bold text-sm">{kit.price}R$</div>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
+                      <h3 className="text-white font-bold text-sm mb-2">{league.name}</h3>
+                      
+                      {isLeagueOpen && (
+                        <div className="mt-4 pt-4 border-t border-border animate-fade-in">
+                          <div className="flex items-center justify-between mb-3">
+                            {league.join_link && (
+                              <a
+                                href={league.join_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-4 py-1.5 bg-primary text-black text-sm font-bold rounded-full hover:opacity-90 transition"
+                              >
+                                Join Server
+                              </a>
                             )}
-                          </>
-                        ) : (
-                          <p className="text-text-muted text-sm">No teams in this league</p>
-                        )}
-                      </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenLeague(null);
+                                setOpenTeam(null);
+                              }}
+                              className="text-text-muted hover:text-white text-sm"
+                            >
+                              Close ✕
+                            </button>
+                          </div>
+                          
+                          {leagueTeams.length > 0 ? (
+                            <>
+                              <p className="text-text-muted text-xs mb-2">Teams:</p>
+                              <div className="grid grid-cols-3 gap-2 mb-4">
+                                {leagueTeams.map(team => {
+                                  const isTeamOpen = openTeam === team.id;
+                                  return (
+                                    <button
+                                      key={team.id}
+                                      className={`p-2 rounded-lg border text-center text-xs transition-all ${
+                                        isTeamOpen 
+                                          ? 'border-primary bg-primary/20 text-white' 
+                                          : 'border-border bg-app-bg text-text-muted hover:text-white hover:border-primary/50'
+                                      }`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleTeam(team.id);
+                                        if (openTeam !== team.id) {
+                                          fetchTeamKits(team.id);
+                                        }
+                                      }}
+                                    >
+                                      {team.logo_url ? (
+                                        <img src={team.logo_url} alt={team.name} className="w-8 h-8 rounded-full mx-auto mb-1 object-cover" />
+                                      ) : (
+                                        <Users size={16} className="mx-auto mb-1" />
+                                      )}
+                                      <span className="line-clamp-1">{team.name}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              
+                              {openTeam && teamKits.length > 0 && (
+                                <div className="animate-fade-in">
+                                  <p className="text-text-muted text-xs mb-2">
+                                    Kits for <span className="text-white font-semibold">{teams.find(t => t.id === openTeam)?.name}</span>
+                                  </p>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {teamKits.map(kit => (
+                                      <div
+                                        key={kit.id}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          window.open(kit.link, '_blank');
+                                        }}
+                                        className="bg-app-bg rounded-lg overflow-hidden cursor-pointer hover:ring-2 ring-primary transition-all"
+                                      >
+                                        {kit.thumbnail_url ? (
+                                          <img src={kit.thumbnail_url} alt={kit.name} className="w-full h-16 object-cover" />
+                                        ) : (
+                                          <div className="w-full h-16 bg-border flex items-center justify-center">
+                                            <Search className="text-text-muted" size={20} />
+                                          </div>
+                                        )}
+                                        <div className="p-2">
+                                          <p className="text-white text-xs line-clamp-1">{kit.name}</p>
+                                          <p className="text-primary font-bold text-xs">{kit.price ? `${kit.price}R$` : 'Free'}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-text-muted text-sm">No teams in this league</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
