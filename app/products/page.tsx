@@ -233,8 +233,28 @@ export default function Products() {
                 {filteredProducts.map((product) => (
                   <div
                     key={product.id}
-                    onClick={() => window.open(product.link, '_blank')}
-                    className="product-card flex flex-col justify-between min-h-[240px] relative overflow-hidden"
+                    onClick={async () => {
+                      try {
+                        await fetch('/api/webhooks/purchase', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            type: 'clothing',
+                            item: {
+                              id: product.id,
+                              name: product.name,
+                              price: product.price,
+                              link: product.link,
+                              thumbnail_url: product.icon
+                            }
+                          })
+                        });
+                      } catch (e) {
+                        console.error('Webhook error:', e);
+                      }
+                      window.open(product.link, '_blank');
+                    }}
+                    className="product-card flex flex-col justify-between min-h-[240px] relative overflow-hidden cursor-pointer"
                   >
                     <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
                       <svg width="150" height="150" viewBox="0 0 100 100" fill="currentColor" className="text-white">
@@ -391,28 +411,54 @@ export default function Products() {
                                     Kits for <span className="text-white font-semibold">{teams.find(t => t.id === openTeam)?.name}</span>
                                   </p>
                                   <div className="grid grid-cols-2 gap-2">
-                                    {teamKits.map(kit => (
-                                      <div
-                                        key={kit.id}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          window.open(kit.link, '_blank');
-                                        }}
-                                        className="bg-app-bg rounded-lg overflow-hidden cursor-pointer hover:ring-2 ring-primary transition-all"
-                                      >
-                                        {kit.thumbnail_url ? (
-                                          <img src={kit.thumbnail_url} alt={kit.name} className="w-full h-16 object-cover" />
-                                        ) : (
-                                          <div className="w-full h-16 bg-border flex items-center justify-center">
-                                            <Search className="text-text-muted" size={20} />
+                                    {teamKits.map(kit => {
+                                      const currentLeague = leagues.find(l => l.id === teams.find(t => t.id === openTeam)?.league_id);
+                                      const currentTeam = teams.find(t => t.id === openTeam);
+                                      return (
+                                        <div
+                                          key={kit.id}
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            try {
+                                              await fetch('/api/webhooks/purchase', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                  type: 'league',
+                                                  item: {
+                                                    id: kit.id,
+                                                    name: kit.name,
+                                                    price: kit.price,
+                                                    link: kit.link,
+                                                    thumbnail_url: kit.thumbnail_url
+                                                  },
+                                                  leagueInfo: {
+                                                    leagueName: currentLeague?.name,
+                                                    teamName: currentTeam?.name
+                                                  }
+                                                })
+                                              });
+                                            } catch (e) {
+                                              console.error('Webhook error:', e);
+                                            }
+                                            window.open(kit.link, '_blank');
+                                          }}
+                                          className="bg-app-bg rounded-lg overflow-hidden cursor-pointer hover:ring-2 ring-primary transition-all"
+                                        >
+                                          {kit.thumbnail_url ? (
+                                            <img src={kit.thumbnail_url} alt={kit.name} className="w-full h-16 object-cover" />
+                                          ) : (
+                                            <div className="w-full h-16 bg-border flex items-center justify-center">
+                                              <Search className="text-text-muted" size={20} />
+                                            </div>
+                                          )}
+                                          <div className="p-2">
+                                            <p className="text-white text-xs line-clamp-1">{kit.name}</p>
+                                            <p className="text-primary font-bold text-xs">{kit.price ? `${kit.price}R$` : 'Free'}</p>
                                           </div>
-                                        )}
-                                        <div className="p-2">
-                                          <p className="text-white text-xs line-clamp-1">{kit.name}</p>
-                                          <p className="text-primary font-bold text-xs">{kit.price ? `${kit.price}R$` : 'Free'}</p>
                                         </div>
-                                      </div>
-                                    ))}
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               )}

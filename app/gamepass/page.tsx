@@ -157,7 +157,27 @@ export default function Gamepass() {
               <p className="text-primary font-bold text-xl mb-6">{selectedGamepass.price === null ? 'Offsale' : selectedGamepass.price === 0 ? 'Free' : `${selectedGamepass.price}R$`}</p>
               
               <button
-                onClick={() => window.open(selectedGamepass.link, '_blank')}
+                onClick={async () => {
+                  try {
+                    await fetch('/api/webhooks/purchase', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        type: 'gamepass',
+                        item: {
+                          id: selectedGamepass.id,
+                          name: selectedGamepass.name,
+                          price: selectedGamepass.price,
+                          link: selectedGamepass.link,
+                          thumbnail_url: selectedGamepass.icon
+                        }
+                      })
+                    });
+                  } catch (e) {
+                    console.error('Webhook error:', e);
+                  }
+                  window.open(selectedGamepass.link, '_blank');
+                }}
                 className="w-full py-3 px-6 rounded-card font-bold text-base transition-all bg-primary text-black hover:opacity-90 hover:scale-105"
               >
                 Purchase
