@@ -66,6 +66,11 @@ async function sendPurchaseWebhook(
       inline: false
     },
     {
+      name: '🔗 Links',
+      value: `[👀 See Item](${itemLink})\n[📊 Check Sales](https://www.roblox.com/communities/configure?id=35515756#!/revenue/sales)`,
+      inline: false
+    },
+    {
       name: '💰 Price',
       value: itemPrice === 0 ? '`Free`' : `\`${itemPrice}R\$\``,
       inline: true
@@ -102,25 +107,6 @@ async function sendPurchaseWebhook(
           text: '7B STORE • Click Notification'
         },
         timestamp: new Date().toISOString()
-      }
-    ],
-    components: [
-      {
-        type: 1,
-        components: [
-          {
-            type: 2,
-            style: 5,
-            label: '👀 See Item',
-            url: itemLink
-          },
-          {
-            type: 2,
-            style: 5,
-            label: '📊 Check Sales',
-            url: 'https://www.roblox.com/communities/configure?id=35515756#!/revenue/sales'
-          }
-        ]
       }
     ]
   };
