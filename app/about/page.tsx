@@ -150,10 +150,19 @@ export default function About() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Delete this item?')) return;
-    const res = await fetch(`/api/admin/shop-items?id=${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      setClothingItems(prev => prev.filter(item => item.id !== id));
-      setGamepassItems(prev => prev.filter(item => item.id !== id));
+    try {
+      const res = await fetch(`/api/admin/shop-items?id=${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      console.log('[Admin] Delete response:', data);
+      if (res.ok) {
+        setClothingItems(prev => prev.filter(item => item.id !== id));
+        setGamepassItems(prev => prev.filter(item => item.id !== id));
+      } else {
+        alert('Failed to delete: ' + (data.error || 'Unknown error'));
+      }
+    } catch (e) {
+      console.error('[Admin] Delete error:', e);
+      alert('Failed to delete item');
     }
   };
 

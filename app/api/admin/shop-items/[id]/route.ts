@@ -12,13 +12,19 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Missing id' }, { status: 400 });
     }
 
-    console.log('[ShopItems DELETE] Deleting id:', id);
-    await sql`DELETE FROM shop_items WHERE id = ${parseInt(id)}`;
-    console.log('[ShopItems DELETE] Deleted successfully');
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
+    }
 
-    return NextResponse.json({ ok: true });
+    console.log('[ShopItems DELETE] Deleting id:', parsedId);
+    
+    await sql`DELETE FROM shop_items WHERE id = ${parsedId}`;
+    
+    console.log('[ShopItems DELETE] Deleted successfully');
+    return NextResponse.json({ ok: true, deletedId: parsedId });
   } catch (error) {
-    console.error('[ShopItems] DELETE error:', error);
-    return NextResponse.json({ error: 'Failed to delete item' }, { status: 500 });
+    console.error('[ShopItems DELETE] Error:', error);
+    return NextResponse.json({ error: 'Failed to delete item', details: String(error) }, { status: 500 });
   }
 }
