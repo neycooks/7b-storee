@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 
+export const revalidate = 0;
+
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -10,7 +12,9 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Missing id' }, { status: 400 });
     }
 
+    console.log('[ShopItems DELETE] Deleting id:', id);
     await sql`DELETE FROM shop_items WHERE id = ${parseInt(id)}`;
+    console.log('[ShopItems DELETE] Deleted successfully');
 
     return NextResponse.json({ ok: true });
   } catch (error) {

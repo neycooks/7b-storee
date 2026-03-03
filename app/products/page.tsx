@@ -55,6 +55,9 @@ export default function Products() {
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [leagueView, setLeagueView] = useState<'leagues' | 'teams' | 'merch'>('leagues');
+  
+  const [openLeague, setOpenLeague] = useState<number | null>(null);
+  const [openTeam, setOpenTeam] = useState<number | null>(null);
 
   const fetchProducts = (pageNum: number) => {
     setLoading(true);
@@ -138,6 +141,21 @@ export default function Products() {
     setSelectedTeam(team);
     setLeagueView('merch');
     fetchTeamKits(team.id);
+  };
+
+  const toggleLeague = (leagueId: number) => {
+    if (openLeague === leagueId) {
+      setOpenLeague(null);
+      setOpenTeam(null);
+    } else {
+      setOpenLeague(leagueId);
+      setOpenTeam(null);
+      fetchTeams(leagueId);
+    }
+  };
+
+  const toggleTeam = (teamId: number) => {
+    setOpenTeam(prev => prev === teamId ? null : teamId);
   };
 
   const filteredProducts = products.filter(product =>
@@ -268,117 +286,123 @@ export default function Products() {
         </>
       ) : (
         <div className="animate-fade-in">
-          {leagueView === 'leagues' && !selectedLeague && (
-            <div className="text-center py-10">
-              <h2 className="text-white font-bold text-2xl mb-6">Leagues</h2>
-              {loading ? (
-                <Loader2 className="animate-spin text-primary mx-auto" size={40} />
-              ) : leagues.length === 0 ? (
-                <p className="text-text-muted">No leagues available</p>
-              ) : (
-                <div className="grid grid-cols-4 gap-4">
-                  {leagues.map(league => (
+          <h2 className="text-white font-bold text-2xl mb-6">Leagues</h2>
+          {loading ? (
+            <Loader2 className="animate-spin text-primary mx-auto" size={40} />
+          ) : leagues.length === 0 ? (
+            <p className="text-text-muted">No leagues available</p>
+          ) : (
+            <div className="space-y-3">
+              {leagues.map(league => {
+                const isLeagueOpen = openLeague === league.id;
+                const isTeamsOpen = isLeagueOpen && openTeam !== null;
+                
+                return (
+                  <div
+                    key={league.id}
+                    className={`rounded-xl border border-border bg-card-bg overflow-hidden transition-all duration-300 ease-out ${isLeagueOpen ? 'shadow-lg' : ''}`}
+                  >
                     <div
-                      key={league.id}
-                      onClick={() => handleLeagueClick(league)}
-                      className="bg-card-bg rounded-xl p-4 cursor-pointer hover:ring-2 ring-primary transition-all hover:scale-105 animate-fade-in"
+                      className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-border/30 transition-colors"
+                      onClick={() => toggleLeague(league.id)}
                     >
-                      {league.icon_url ? (
-                        <img src={league.icon_url} alt={league.name} className="w-20 h-20 object-cover rounded-lg mx-auto mb-3" />
-                      ) : (
-                        <div className="w-20 h-20 bg-border rounded-lg mx-auto mb-3 flex items-center justify-center">
-                          <Trophy className="text-text-muted" size={32} />
-                        </div>
-                      )}
-                      <h3 className="text-white font-bold text-center mb-2">{league.name}</h3>
-                      {league.join_link && (
-                        <a
-                          href={league.join_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-block px-4 py-1.5 bg-primary text-black text-sm font-bold rounded-full hover:opacity-90 transition"
-                        >
-                          Join Server
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {leagueView === 'teams' && selectedLeague && (
-            <div className="animate-fade-in">
-              <button
-                onClick={() => { setSelectedLeague(null); setLeagueView('leagues'); }}
-                className="text-primary hover:underline mb-4"
-              >
-                ← Back to Leagues
-              </button>
-              <h2 className="text-white font-bold text-2xl mb-6">{selectedLeague.name} - Teams</h2>
-              
-              {teams.length === 0 ? (
-                <p className="text-text-muted">No teams available</p>
-              ) : (
-                <div className="grid grid-cols-4 gap-4">
-                  {teams.map(team => (
-                    <div
-                      key={team.id}
-                      onClick={() => handleTeamClick(team)}
-                      className="bg-card-bg rounded-xl p-4 cursor-pointer hover:ring-2 ring-primary transition-all hover:scale-105 animate-fade-in"
-                    >
-                      {team.logo_url ? (
-                        <img src={team.logo_url} alt={team.name} className="w-20 h-20 object-cover rounded-lg mx-auto mb-3" />
-                      ) : (
-                        <div className="w-20 h-20 bg-border rounded-lg mx-auto mb-3 flex items-center justify-center">
-                          <Users className="text-text-muted" size={32} />
-                        </div>
-                      )}
-                      <h3 className="text-white font-bold text-center">{team.name}</h3>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {leagueView === 'merch' && selectedTeam && (
-            <div className="animate-fade-in">
-              <button
-                onClick={() => { setSelectedTeam(null); setLeagueView('teams'); }}
-                className="text-primary hover:underline mb-4"
-              >
-                ← Back to Teams
-              </button>
-              <h2 className="text-white font-bold text-2xl mb-6">{selectedTeam.name} - Kits</h2>
-              
-              {teamKits.length === 0 ? (
-                <p className="text-text-muted">No kits available</p>
-              ) : (
-                <div className="grid grid-cols-5 gap-4">
-                  {teamKits.map(kit => (
-                    <div
-                      key={kit.id}
-                      onClick={() => window.open(kit.link, '_blank')}
-                      className="bg-card-bg rounded-xl overflow-hidden cursor-pointer hover:ring-2 ring-primary transition"
-                    >
-                      {kit.thumbnail_url ? (
-                        <img src={kit.thumbnail_url} alt={kit.name} className="w-full h-32 object-cover" />
-                      ) : (
-                        <div className="w-full h-32 bg-border flex items-center justify-center">
-                          <Search className="text-text-muted" size={24} />
-                        </div>
-                      )}
-                      <div className="p-3">
-                        <h3 className="text-white font-bold text-sm line-clamp-2">{kit.name}</h3>
-                        <p className="text-primary font-bold text-sm">{kit.price ? `${kit.price}R$` : 'Free'}</p>
+                      <div className="flex items-center gap-3">
+                        {league.icon_url ? (
+                          <img src={league.icon_url} alt={league.name} className="w-10 h-10 object-cover rounded-lg" />
+                        ) : (
+                          <div className="w-10 h-10 bg-border rounded-lg flex items-center justify-center">
+                            <Trophy className="text-text-muted" size={20} />
+                          </div>
+                        )}
+                        <span className="text-white font-bold">{league.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {league.join_link && (
+                          <a
+                            href={league.join_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-3 py-1 bg-primary text-black text-xs font-bold rounded-full hover:opacity-90 transition"
+                          >
+                            Join
+                          </a>
+                        )}
+                        <ChevronRight className={`text-text-muted transition-transform duration-300 ${isLeagueOpen ? 'rotate-90' : ''}`} size={20} />
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                    
+                    <div className={`transition-all duration-300 ease-out ${isLeagueOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                      <div className="px-4 pb-4 border-t border-border pt-3">
+                        {teams.filter(t => t.league_id === league.id).length > 0 ? (
+                          <>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {teams.filter(t => t.league_id === league.id).map(team => {
+                                const isTeamOpen = openTeam === team.id;
+                                return (
+                                  <button
+                                    key={team.id}
+                                    className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                                      isTeamOpen 
+                                        ? 'border-primary bg-primary/20 text-white' 
+                                        : 'border-border bg-app-bg text-text-muted hover:text-white'
+                                    }`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleTeam(team.id);
+                                      if (openTeam !== team.id) {
+                                        fetchTeamKits(team.id);
+                                      }
+                                    }}
+                                  >
+                                    {team.logo_url ? (
+                                      <img src={team.logo_url} alt={team.name} className="w-4 h-4 rounded-full object-cover" />
+                                    ) : (
+                                      <Users size={14} />
+                                    )}
+                                    <span>{team.name}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            
+                            {openTeam && teamKits.length > 0 && (
+                              <div className="space-y-2">
+                                <div className="text-xs text-text-muted">
+                                  Viewing kits of <span className="text-white font-semibold">{teams.find(t => t.id === openTeam)?.name}</span>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                  {teamKits.map(kit => (
+                                    <div
+                                      key={kit.id}
+                                      onClick={() => window.open(kit.link, '_blank')}
+                                      className="rounded-lg border border-border bg-app-bg p-2 flex flex-col items-center text-center text-sm cursor-pointer hover:ring-2 ring-primary transition-all"
+                                    >
+                                      {kit.thumbnail_url ? (
+                                        <img src={kit.thumbnail_url} alt={kit.name} className="w-full h-16 rounded-md object-cover mb-2" />
+                                      ) : (
+                                        <div className="w-full h-16 bg-border rounded-md mb-2 flex items-center justify-center">
+                                          <Search className="text-text-muted" size={20} />
+                                        </div>
+                                      )}
+                                      <div className="line-clamp-2 mb-1 text-white font-medium">{kit.name}</div>
+                                      {kit.price != null && (
+                                        <div className="text-primary font-bold text-sm">{kit.price}R$</div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-text-muted text-sm">No teams in this league</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
