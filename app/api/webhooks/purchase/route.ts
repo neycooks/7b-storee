@@ -46,16 +46,16 @@ async function sendPurchaseWebhook(
 
   switch (type) {
     case 'clothing':
-      title = '👕 New Clothing Purchase!';
-      description = `**${userDisplay}** purchased clothing`;
+      title = '👕 Clothing Clicked!';
+      description = `**${userDisplay}** clicked on clothing item`;
       break;
     case 'gamepass':
-      title = '🎮 New Gamepass Purchase!';
-      description = `**${userDisplay}** purchased a gamepass`;
+      title = '🎮 Gamepass Clicked!';
+      description = `**${userDisplay}** clicked on gamepass`;
       break;
     case 'league':
-      title = '🏆 New League Kit Purchase!';
-      description = `**${userDisplay}** purchased a league kit`;
+      title = '🏆 League Kit Clicked!';
+      description = `**${userDisplay}** clicked on league kit`;
       break;
   }
 
@@ -71,7 +71,7 @@ async function sendPurchaseWebhook(
       inline: true
     },
     {
-      name: '👤 Buyer',
+      name: '👤 User',
       value: user ? `**${user.username}**` : '`Guest`',
       inline: true
     }
@@ -91,7 +91,6 @@ async function sendPurchaseWebhook(
   }
 
   const payload = {
-    content: title,
     embeds: [
       {
         title: title,
@@ -100,7 +99,7 @@ async function sendPurchaseWebhook(
         thumbnail: itemIcon ? { url: itemIcon } : undefined,
         fields: fields,
         footer: {
-          text: '7B STORE • Purchase Notification',
+          text: '7B STORE • Click Notification',
           icon_url: 'https://i.imgur.com/4ausQA1.png'
         },
         timestamp: new Date().toISOString()
@@ -164,7 +163,7 @@ export async function POST(req: NextRequest) {
 
     const user = getDiscordUser(req);
 
-    console.log('[PurchaseWebhook] Processing purchase:', type, item.name, user?.username || 'Guest');
+    console.log('[PurchaseWebhook] Processing click:', type, item.name, user?.username || 'Guest');
 
     const result = await sendPurchaseWebhook(type, item, user, leagueInfo);
 

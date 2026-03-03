@@ -58,6 +58,7 @@ export default function Products() {
   
   const [openLeague, setOpenLeague] = useState<number | null>(null);
   const [openTeam, setOpenTeam] = useState<number | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<RobloxItem | null>(null);
 
   const fetchProducts = (pageNum: number) => {
     setLoading(true);
@@ -233,27 +234,7 @@ export default function Products() {
                 {filteredProducts.map((product) => (
                   <div
                     key={product.id}
-                    onClick={async () => {
-                      try {
-                        await fetch('/api/webhooks/purchase', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            type: 'clothing',
-                            item: {
-                              id: product.id,
-                              name: product.name,
-                              price: product.price,
-                              link: product.link,
-                              thumbnail_url: product.icon
-                            }
-                          })
-                        });
-                      } catch (e) {
-                        console.error('Webhook error:', e);
-                      }
-                      window.open(product.link, '_blank');
-                    }}
+                    onClick={() => setSelectedProduct(product)}
                     className="product-card flex flex-col justify-between min-h-[240px] relative overflow-hidden cursor-pointer"
                   >
                     <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
@@ -474,6 +455,59 @@ export default function Products() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {selectedProduct && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center modal-backdrop animate-fade-in" onClick={() => setSelectedProduct(null)}>
+          <div 
+            className="bg-card-bg rounded-lg p-8 max-w-md w-full mx-4 animate-scale-in overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setSelectedProduct(null)}
+              className="absolute top-4 right-4 text-text-muted hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+
+            <div className="text-center">
+              {selectedProduct.icon && (
+                <img src={selectedProduct.icon} alt={selectedProduct.name} className="w-32 h-32 object-cover rounded-lg mx-auto mb-4" />
+              )}
+              <h2 className="text-white font-bold text-2xl mb-2">{selectedProduct.name}</h2>
+              <p className="text-primary font-bold text-xl mb-6">
+                {selectedProduct.price === null ? 'Offsale' : selectedProduct.price === 0 ? 'Free' : `${selectedProduct.price}R$`}
+              </p>
+              
+              <button
+                onClick={async () => {
+                  try {
+                    await fetch('/api/webhooks/purchase', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        type: 'clothing',
+                        item: {
+                          id: selectedProduct.id,
+                          name: selectedProduct.name,
+                          price: selectedProduct.price,
+                          link: selectedProduct.link,
+                          thumbnail_url: selectedProduct.icon
+                        }
+                      })
+                    });
+                  } catch (e) {
+                    console.error('Webhook error:', e);
+                  }
+                  window.open(selectedProduct.link, '_blank');
+                }}
+                className="w-full py-3 px-6 rounded-card font-bold text-base transition-all bg-primary text-black hover:opacity-90 hover:scale-105"
+              >
+                Purchase
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
