@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { normalizeShopItemType } from '@/lib/utils';
 
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -70,8 +72,9 @@ export async function POST(req: NextRequest) {
         SET name = ${itemName}, price = ${itemPrice}, thumbnail_url = ${thumbnailUrl}, link = ${itemLink}, type = ${normalizedType}
         WHERE id = ${id}
       `;
+      console.log('[ShopItems] Updated item:', id, normalizedType);
     } else {
-      await sql`
+      const result = await sql`
         INSERT INTO shop_items (roblox_id, name, price, thumbnail_url, link, type)
         VALUES (${itemRobloxId}, ${itemName}, ${itemPrice}, ${thumbnailUrl}, ${itemLink}, ${normalizedType})
         ON CONFLICT (roblox_id) DO UPDATE SET
@@ -79,8 +82,10 @@ export async function POST(req: NextRequest) {
           price = EXCLUDED.price,
           thumbnail_url = EXCLUDED.thumbnail_url,
           link = EXCLUDED.link,
-          type = EXCLUDED.type;
+          type = EXCLUDED.type
+        RETURNING id, roblox_id, type
       `;
+      console.log('[ShopItems] Inserted item:', result, normalizedType);
     }
 
     return NextResponse.json({ ok: true });

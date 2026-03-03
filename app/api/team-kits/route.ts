@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -14,6 +16,7 @@ export async function GET(request: Request) {
     const rows = await sql`SELECT * FROM team_kits ORDER BY created_at DESC;`;
     return NextResponse.json({ kits: rows });
   } catch (error) {
+    console.error('[TeamKits API] Error:', error);
     return NextResponse.json({ kits: [] });
   }
 }

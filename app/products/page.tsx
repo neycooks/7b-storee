@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Search, ChevronLeft, ChevronRight, Loader2, Trophy, Users } from 'lucide-react';
 
+export const revalidate = 0;
+
 interface RobloxItem {
   id: number;
   name: string;
@@ -58,7 +60,7 @@ export default function Products() {
     setLoading(true);
     setError(null);
     
-    fetch(`/api/items?page=${pageNum}&pageSize=${pageSize}&nocache=${Date.now()}`)
+    fetch(`/api/items?page=${pageNum}&pageSize=${pageSize}`, { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         console.log('[Products] Items data:', data);
@@ -95,7 +97,7 @@ export default function Products() {
   const fetchLeagues = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/leagues?t=${Date.now()}`);
+      const res = await fetch('/api/leagues', { cache: 'no-store' });
       const data = await res.json();
       console.log('[Products] Leagues data:', data);
       setLeagues(data.leagues || []);
@@ -107,7 +109,7 @@ export default function Products() {
 
   const fetchTeams = async (leagueId: number) => {
     try {
-      const res = await fetch(`/api/teams?leagueId=${leagueId}`);
+      const res = await fetch(`/api/teams?leagueId=${leagueId}`, { cache: 'no-store' });
       const data = await res.json();
       setTeams(data.teams || []);
     } catch (e) {
@@ -117,7 +119,7 @@ export default function Products() {
 
   const fetchTeamKits = async (teamId: number) => {
     try {
-      const res = await fetch(`/api/team-kits?teamId=${teamId}`);
+      const res = await fetch(`/api/team-kits?teamId=${teamId}`, { cache: 'no-store' });
       const data = await res.json();
       setTeamKits(data.kits || []);
     } catch (e) {

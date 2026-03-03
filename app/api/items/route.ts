@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
-import clothingData from '@/app/data/clothing.json';
+
+export const revalidate = 0;
 
 interface Item {
   id: number;
@@ -43,14 +44,22 @@ async function getThumbnails(assetIds: number[]): Promise<Record<number, string>
 async function getItemsFromDB(): Promise<Item[]> {
   try {
     const rows = await sql`
-      SELECT roblox_id, name, price, thumbnail_url, link
+      SELECT id, roblox_id, name, price, thumbnail_url, link
       FROM shop_items
-      WHERE type != 'gamepass'
+      WHERE type IN ('item', 'shirt', 'pants')
       ORDER BY created_at DESC;
     `;
     
+    console.log('[Items API] DB rows:', rows.length);
+    
+    if (rows.length === 0) {
+      console.log('[Items API] No items in DB');
+      return [];
+    }
+    
     return rows.map((row: any) => ({
-      id: Number(row.roblox_id),
+      id: row.id,
+      roblox_id: Number(row.roblox_id),
       name: row.name,
       description: '',
       price: row.price,
@@ -58,12 +67,13 @@ async function getItemsFromDB(): Promise<Item[]> {
       icon: row.thumbnail_url || null,
     }));
   } catch (error) {
-    console.error('[Items] DB error:', error);
+    console.error('[Items API] DB error:', error);
     return [];
   }
 }
 
 async function getItemsFromJSON(): Promise<Item[]> {
+  const { default: clothingData } = await import('@/app/data/clothing.json');
   const allIds = clothingData.map((item: any) => item.id);
   const thumbnails = await getThumbnails(allIds);
 
@@ -81,17 +91,15 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = Number(searchParams.get('page') ?? '1');
   const pageSize = Number(searchParams.get('pageSize') ?? '20');
-  const nocache = searchParams.get('nocache');
 
   const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 20;
   const safePage = Number.isFinite(page) && page > 0 ? page : 1;
 
-  console.log('[Items API] Fetching items from DB...');
+  console.log('[Items API] Fetching items...');
   let allItems = await getItemsFromDB();
-  console.log('[Items API] DB items count:', allItems.length);
   
   if (allItems.length === 0) {
-    console.log('[Items] DB empty, falling back to clothing.json');
+    console.log('[Items API] DB empty, using JSON fallback');
     allItems = await getItemsFromJSON();
   }
 

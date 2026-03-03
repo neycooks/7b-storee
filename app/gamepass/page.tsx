@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Search, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { X } from 'lucide-react';
 
+export const revalidate = 0;
+
 interface GamepassItem {
   id: number;
   name: string;
@@ -28,7 +30,7 @@ export default function Gamepass() {
   const fetchGamepasses = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/gamepasses?t=${Date.now()}`);
+      const res = await fetch('/api/gamepasses', { cache: 'no-store' });
       const data = await res.json();
       console.log('[Gamepass] Data:', data);
       setGamepasses(data.items || []);
