@@ -47,15 +47,15 @@ async function sendPurchaseWebhook(
   switch (type) {
     case 'clothing':
       title = '👕 Clothing Clicked!';
-      description = `**${userDisplay}** clicked on clothing item`;
+      description = `**${userDisplay}** clicked on clothing item\n\n⚠️ Ask an admin for confirmation about purchase`;
       break;
     case 'gamepass':
       title = '🎮 Gamepass Clicked!';
-      description = `**${userDisplay}** clicked on gamepass`;
+      description = `**${userDisplay}** clicked on gamepass\n\n⚠️ Ask an admin for confirmation about purchase`;
       break;
     case 'league':
       title = '🏆 League Kit Clicked!';
-      description = `**${userDisplay}** clicked on league kit`;
+      description = `**${userDisplay}** clicked on league kit\n\n⚠️ Ask an admin for confirmation about purchase`;
       break;
   }
 
@@ -125,6 +125,8 @@ async function sendPurchaseWebhook(
       }
     ]
   };
+
+  console.log('[PurchaseWebhook] Payload:', JSON.stringify(payload, null, 2));
 
   try {
     const response = await fetch(webhookUrl, {
