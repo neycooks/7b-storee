@@ -53,15 +53,15 @@ export default function Gamepass() {
 
   return (
     <div className="animate-fade-in">
-      <div className="flex flex-col items-center mb-6">
+      <div className="flex flex-col items-center mb-4 sm:mb-6">
         <div className="relative w-full max-w-[400px]">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
           <input
             type="text"
-            placeholder="Search For Gamepasses"
+            placeholder="Search Gamepasses"
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-            className="w-full bg-card-bg border border-border rounded-pill py-3 pl-12 pr-4 text-white placeholder-text-muted focus:outline-none focus:border-primary/50"
+            className="w-full bg-card-bg border border-border rounded-pill py-2.5 sm:py-3 pl-12 pr-4 text-white placeholder-text-muted focus:outline-none focus:border-primary/50"
           />
         </div>
       </div>
@@ -84,12 +84,12 @@ export default function Gamepass() {
             Showing {paginatedGamepasses.length} of {totalItems} items (Page {page} of {total})
           </p>
 
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
             {paginatedGamepasses.map((gamepass) => (
               <div
                 key={gamepass.id}
                 onClick={() => setSelectedGamepass(gamepass)}
-                className="product-card flex flex-col justify-between min-h-[240px] relative overflow-hidden"
+                className="product-card flex flex-col justify-between min-h-[160px] md:min-h-[200px] relative overflow-hidden"
               >
                 <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
                   <svg width="150" height="150" viewBox="0 0 100 100" fill="currentColor" className="text-white">

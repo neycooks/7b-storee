@@ -167,16 +167,16 @@ export default function Products() {
 
   return (
     <div className="animate-fade-in">
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
         {isGroupView && (
-          <div className="relative flex-1 max-w-[400px]">
+          <div className="relative w-full sm:max-w-[400px]">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
             <input
               type="text"
-              placeholder="Search For Products"
+              placeholder="Search Products"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-card-bg border border-border rounded-pill py-3 pl-12 pr-4 text-white placeholder-text-muted focus:outline-none focus:border-primary/50"
+              className="w-full bg-card-bg border border-border rounded-pill py-2.5 sm:py-3 pl-12 pr-4 text-white placeholder-text-muted focus:outline-none focus:border-primary/50"
             />
           </div>
         )}
@@ -230,12 +230,12 @@ export default function Products() {
                 Showing {filteredProducts.length} of {totalItems} items (Page {page} of {totalPages})
               </p>
 
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
                 {filteredProducts.map((product) => (
                   <div
                     key={product.id}
                     onClick={() => setSelectedProduct(product)}
-                    className="product-card flex flex-col justify-between min-h-[240px] relative overflow-hidden cursor-pointer"
+                    className="product-card flex flex-col justify-between min-h-[160px] md:min-h-[200px] relative overflow-hidden cursor-pointer"
                   >
                     <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
                       <svg width="150" height="150" viewBox="0 0 100 100" fill="currentColor" className="text-white">
@@ -293,7 +293,7 @@ export default function Products() {
           ) : leagues.length === 0 ? (
             <p className="text-text-muted">No leagues available</p>
           ) : (
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
               {leagues.map(league => {
                 const isLeagueOpen = openLeague === league.id;
                 const isTeamsOpen = isLeagueOpen && openTeam !== null;
@@ -459,9 +459,9 @@ export default function Products() {
       )}
 
       {selectedProduct && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center modal-backdrop animate-fade-in" onClick={() => setSelectedProduct(null)}>
+        <div className="fixed inset-0 z-[90] flex items-center justify-center modal-backdrop animate-fade-in p-4" onClick={() => setSelectedProduct(null)}>
           <div 
-            className="bg-card-bg rounded-lg p-8 max-w-md w-full mx-4 animate-scale-in overflow-hidden"
+            className="bg-card-bg rounded-lg p-4 md:p-8 max-w-sm w-full animate-scale-in overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <button 
@@ -473,10 +473,10 @@ export default function Products() {
 
             <div className="text-center">
               {selectedProduct.icon && (
-                <img src={selectedProduct.icon} alt={selectedProduct.name} className="w-32 h-32 object-cover rounded-lg mx-auto mb-4" />
+                <img src={selectedProduct.icon} alt={selectedProduct.name} className="w-24 h-24 md:w-32 md:h-32 object-cover rounded-lg mx-auto mb-4" />
               )}
-              <h2 className="text-white font-bold text-2xl mb-2">{selectedProduct.name}</h2>
-              <p className="text-primary font-bold text-xl mb-6">
+              <h2 className="text-white font-bold text-lg md:text-2xl mb-2">{selectedProduct.name}</h2>
+              <p className="text-primary font-bold text-lg md:text-xl mb-4 md:mb-6">
                 {selectedProduct.price === null ? 'Offsale' : selectedProduct.price === 0 ? 'Free' : `${selectedProduct.price}R$`}
               </p>
               
