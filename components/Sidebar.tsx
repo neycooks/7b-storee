@@ -40,7 +40,7 @@ export default function Sidebar() {
       <div className="px-4 pb-3">
         <button
           onClick={toggle}
-          className={`w-full flex items-center justify-center py-2 bg-app-bg rounded-lg text-text-muted:bg-border transition-all duration-300 hover:text-white hover hover:scale-105 ${collapsed ? 'px-2' : 'px-3'}`}
+          className={`w-full flex items-center justify-center py-2 bg-app-bg rounded-lg text-text-muted transition-all duration-300 hover:text-white hover:bg-border hover:scale-105 ${collapsed ? 'px-2' : 'px-3'}`}
         >
           {collapsed ? (
             <ChevronRight size={18} className="animate-fade-in" />
