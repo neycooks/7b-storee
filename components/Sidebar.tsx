@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, ShoppingBag, FileText, Info, Star, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
+import { LayoutGrid, ShoppingBag, FileText, Info, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 
 const navItems = [
@@ -18,72 +18,90 @@ export default function Sidebar() {
   const { collapsed, toggle } = useSidebar();
 
   return (
-    <aside 
-      className={`h-full bg-card-bg rounded-card flex flex-col transition-all duration-300 ease-in-out ${
-        collapsed ? 'w-20' : 'w-full'
-      }`}
-    >
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
+    <aside className="h-full bg-card-bg rounded-card flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="p-6 pb-4">
+        <div className={`flex items-center gap-2 mb-1 ${collapsed ? 'justify-center' : ''}`}>
           <img 
             src="https://i.imgur.com/4ausQA1.png" 
             alt="7B STORE" 
-            className={`object-contain rounded-2xl transition-all duration-300 ${collapsed ? 'w-10 h-10 mx-auto' : 'w-10 h-10'}`}
+            className="w-10 h-10 object-contain rounded-2xl flex-shrink-0"
           />
           {!collapsed && (
-            <span className="text-white font-bold text-xl">7B STORE</span>
+            <span className="text-white font-bold text-xl whitespace-nowrap animate-fade-in">7B STORE</span>
           )}
         </div>
         {!collapsed && (
-          <p className="text-text-muted uppercase text-[10px] tracking-[3px] ml-12">Reliable Hub System</p>
+          <p className="text-text-muted uppercase text-[10px] tracking-[3px] ml-12 animate-fade-in">Reliable Hub System</p>
         )}
       </div>
 
-      <button
-        onClick={toggle}
-        className={`hidden lg:flex items-center justify-center mb-4 mx-auto w-8 h-8 bg-app-bg rounded-full text-text-muted hover:text-white hover:bg-border transition-all duration-300 ${collapsed ? 'rotate-180' : ''}`}
-      >
-        {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-      </button>
+      {/* Toggle Button */}
+      <div className="px-4 pb-3">
+        <button
+          onClick={toggle}
+          className={`w-full flex items-center justify-center py-2 bg-app-bg rounded-lg text-text-muted:bg-border transition-all duration-300 hover:text-white hover hover:scale-105 ${collapsed ? 'px-2' : 'px-3'}`}
+        >
+          {collapsed ? (
+            <ChevronRight size={18} className="animate-fade-in" />
+          ) : (
+            <>
+              <ChevronLeft size={18} className="mr-2" />
+              <span className="text-sm font-medium">Collapse</span>
+            </>
+          )}
+        </button>
+      </div>
 
-      <nav className="flex-1">
-        {navItems.map((item) => {
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-2">
+        {navItems.map((item, index) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`sidebar-link ${isActive ? 'active' : 'inactive'} mb-1 ${
-                collapsed ? 'justify-center px-2' : ''
-              }`}
+              className={`flex items-center gap-3 px-4 py-3 mb-1 rounded-xl transition-all duration-300 ${
+                isActive 
+                  ? 'bg-primary text-black font-bold' 
+                  : 'text-text-muted hover:text-white hover:bg-border'
+              } ${collapsed ? 'justify-center px-2' : ''}`}
+              style={{ animationDelay: collapsed ? `${index * 50}ms` : '0ms' }}
               title={collapsed ? item.label : undefined}
             >
-              <Icon size={20} />
-              {!collapsed && <span className="font-medium">{item.label}</span>}
+              <Icon size={20} className="flex-shrink-0" />
+              {!collapsed && (
+                <span className="font-medium whitespace-nowrap animate-slide-in-left">{item.label}</span>
+              )}
             </Link>
           );
         })}
       </nav>
 
-      <a 
-        href="https://discord.gg/A7BK2qnX97" 
-        target="_blank" 
-        rel="noopener noreferrer" 
-        className={`bg-app-bg rounded-card p-3 hover:bg-border transition-colors cursor-pointer flex items-center gap-3 ${
-          collapsed ? 'justify-center p-2' : ''
-        }`}
-        title={collapsed ? '7B Academy' : undefined}
-      >
-        <img 
-          src="https://i.imgur.com/h4cpcUg.gif" 
-          alt="7B Academy" 
-          className="w-10 h-10 rounded-sm object-cover" 
-        />
-        {!collapsed && (
-          <span className="text-text-muted text-xs font-bold">7B Academy</span>
-        )}
-      </a>
+      {/* Discord Link */}
+      <div className="p-3 pt-2">
+        <a 
+          href="https://discord.gg/A7BK2qnX97" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className={`flex items-center gap-3 bg-app-bg rounded-xl p-3 hover:bg-border transition-all duration-300 hover:scale-105 ${
+            collapsed ? 'justify-center' : ''
+          }`}
+          title={collapsed ? '7B Academy' : undefined}
+        >
+          <img 
+            src="https://i.imgur.com/h4cpcUg.gif" 
+            alt="7B Academy" 
+            className="w-10 h-10 rounded-lg object-cover flex-shrink-0" 
+          />
+          {!collapsed && (
+            <div className="animate-fade-in">
+              <p className="text-text-muted text-xs font-bold">7B Academy</p>
+            </div>
+          )}
+        </a>
+      </div>
     </aside>
   );
 }
