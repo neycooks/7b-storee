@@ -25,7 +25,7 @@ async function sendPurchaseWebhook(
     thumbnail_url?: string | null;
     icon?: string | null;
   },
-  user: { username?: string; avatar?: string } | null,
+  user: { username?: string; avatar?: string; id?: string } | null,
   leagueInfo?: { leagueName?: string; teamName?: string }
 ) {
   const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
@@ -40,6 +40,7 @@ async function sendPurchaseWebhook(
   const itemPrice = item.price ?? 0;
   const itemLink = item.link || '#';
   const userDisplay = user?.username || 'Guest';
+  const userMention = user?.id ? `<@${user.id}>` : 'Guest';
 
   let title = '';
   let description = '';
@@ -47,15 +48,15 @@ async function sendPurchaseWebhook(
   switch (type) {
     case 'clothing':
       title = '👕 Clothing Clicked!';
-      description = `**${userDisplay}** clicked on clothing item\n\n⚠️ Ask an admin for confirmation about purchase`;
+      description = `**${userMention} clicked on clothing item**\n\n⚠️ Ask an admin for confirmation about purchase`;
       break;
     case 'gamepass':
       title = '🎮 Gamepass Clicked!';
-      description = `**${userDisplay}** clicked on gamepass\n\n⚠️ Ask an admin for confirmation about purchase`;
+      description = `**${userMention} clicked on gamepass**\n\n⚠️ Ask an admin for confirmation about purchase`;
       break;
     case 'league':
       title = '🏆 League Kit Clicked!';
-      description = `**${userDisplay}** clicked on league kit\n\n⚠️ Ask an admin for confirmation about purchase`;
+      description = `**${userMention} clicked on league kit**\n\n⚠️ Ask an admin for confirmation about purchase`;
       break;
   }
 
@@ -96,6 +97,7 @@ async function sendPurchaseWebhook(
   }
 
   const payload = {
+    content: user?.id ? `<@${user.id}>` : '',
     embeds: [
       {
         title: title,
