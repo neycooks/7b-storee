@@ -28,8 +28,7 @@ export default function ShowcasePage() {
   const handsMeshRef = useRef<any>(null);
   const headMeshRef = useRef<any>(null);
   const materialsRef = useRef<{ torso: any; legs: any; hands: any; head: any }>({ torso: null, legs: null, hands: null, head: null });
-  const loadedModelsRef = useRef<Set<string>>(new Set());
-  const animationRef = useRef<number>(0);
+  const texturesRef = useRef<{ shirt: HTMLImageElement | null; pants: HTMLImageElement | null }>({ shirt: null, pants: null });
 
   const initScene = useCallback(async () => {
     if (typeof window === 'undefined' || !containerRef.current || !canvasRef.current) return;
@@ -103,17 +102,20 @@ export default function ShowcasePage() {
       skinTexture.flipY = false;
       skinTexture.colorSpace = THREE.SRGBColorSpace;
 
-      const loadModel = (path: string, type: 'torso' | 'legs' | 'hands' | 'head', scale: number = 0.3) => {
+      const randomFaceNum = Math.floor(Math.random() * 13) + 1;
+      const faceTexture = textureLoader.load(`/dripzels/models/textures/facesTransparent/${randomFaceNum}.png`);
+      faceTexture.flipY = false;
+      faceTexture.colorSpace = THREE.SRGBColorSpace;
+
+      const loadModel = (path: string, type: 'torso' | 'legs' | 'hands' | 'head', texture: any, scale: number = 0.3) => {
         return new Promise<any>((resolve, reject) => {
           const loader = new GLTFLoader();
           loader.load(
             path,
-            (gltf) => {
+            (gltf: any) => {
               const model = gltf.scene;
               model.scale.set(scale, scale, scale);
 
-              const texture = type === 'torso' || type === 'hands' ? baseShirtTexture : basePantsTexture;
-              
               const material = new THREE.MeshStandardMaterial({
                 color: 0xffffff,
                 map: texture.clone(),
@@ -149,27 +151,27 @@ export default function ShowcasePage() {
       setLoadingProgress(20);
       
       try {
-        await loadModel('/dripzels/models/Blocky_Head.glb', 'head');
+        await loadModel('/dripzels/models/Blocky_Head.glb', 'head', faceTexture);
       } catch (e) { console.warn('Head model failed to load'); }
       setLoadingProgress(40);
 
       try {
-        await loadModel('/dripzels/models/Blocky_Torso.glb', 'torso');
+        await loadModel('/dripzels/models/Blocky_Torso.glb', 'torso', baseShirtTexture);
       } catch (e) { console.warn('Torso model failed to load'); }
       setLoadingProgress(60);
 
       try {
-        await loadModel('/dripzels/models/Blocky_Hands.glb', 'hands');
+        await loadModel('/dripzels/models/Blocky_Hands.glb', 'hands', baseShirtTexture);
       } catch (e) { console.warn('Hands model failed to load'); }
       setLoadingProgress(80);
 
       try {
-        await loadModel('/dripzels/models/Blocky_Legs.glb', 'legs');
+        await loadModel('/dripzels/models/Blocky_Legs.glb', 'legs', basePantsTexture);
       } catch (e) { console.warn('Legs model failed to load'); }
       setLoadingProgress(100);
 
       const animate = () => {
-        animationRef.current = requestAnimationFrame(animate);
+        requestAnimationFrame(animate);
         controls.update();
         renderer.render(scene, camera);
       };
@@ -192,9 +194,6 @@ export default function ShowcasePage() {
   useEffect(() => {
     initScene();
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
       if (rendererRef.current) {
         rendererRef.current.dispose();
       }
@@ -202,15 +201,16 @@ export default function ShowcasePage() {
   }, [initScene]);
 
   useEffect(() => {
-    if (!sceneRef.current || !torsoMeshRef.current) return;
+    if (!sceneRef.current) return;
 
     const updateLighting = async () => {
       const THREE = await import('three');
       
-      const spotLight1 = sceneRef.current.children.find((c: any) => c.isSpotLight && c.position.x === 1.5);
-      const spotLight2 = sceneRef.current.children.find((c: any) => c.isSpotLight && c.position.x === -1);
-      const spotLight3 = sceneRef.current.children.find((c: any) => c.isSpotLight && c.position.z === 3);
-      const spotLight4 = sceneRef.current.children.find((c: any) => c.isSpotLight && c.position.z === -2);
+      const lights = sceneRef.current.children.filter((c: any) => c.isSpotLight);
+      const spotLight1 = lights.find((c: any) => c.position.x === 1.5);
+      const spotLight2 = lights.find((c: any) => c.position.x === -1);
+      const spotLight3 = lights.find((c: any) => c.position.z === 3);
+      const spotLight4 = lights.find((c: any) => c.position.z === -2);
 
       if (lighting === 'none') {
         if (spotLight1) spotLight1.intensity = 10;
@@ -247,7 +247,7 @@ export default function ShowcasePage() {
     updateLighting();
   }, [lighting]);
 
-  const handleShirtUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'shirt' | 'pants') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -257,7 +257,7 @@ export default function ShowcasePage() {
     }
 
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       const img = document.createElement('img');
       img.onload = () => {
         if (img.width !== 585 || img.height !== 559) {
@@ -265,50 +265,34 @@ export default function ShowcasePage() {
           return;
         }
         setError(null);
-        setShirtImage(ev.target?.result as string);
-        applyClothingTexture(ev.target?.result as string, 'shirt');
-      };
-      img.src = ev.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handlePantsUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.match(/image\/(png|jpe?g)/)) {
-      setError('Invalid file type! Only PNG, JPEG, and JPG are allowed!');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = document.createElement('img');
-      img.onload = () => {
-        if (img.width !== 585 || img.height !== 559) {
-          setError('The image must be 585x559 pixels! This is the Roblox clothing standard.');
-          return;
+        
+        if (type === 'shirt') {
+          setShirtImage(ev.target?.result as string);
+        } else {
+          setPantsImage(ev.target?.result as string);
         }
-        setError(null);
-        setPantsImage(ev.target?.result as string);
-        applyClothingTexture(ev.target?.result as string, 'pants');
+        
+        applyClothingTo3D(ev.target?.result as string, type);
+        generate2DPreview(type, ev.target?.result as string);
       };
       img.src = ev.target?.result as string;
     };
     reader.readAsDataURL(file);
   };
 
-  const applyClothingTexture = async (imageSrc: string, type: 'shirt' | 'pants') => {
-    if (!materialsRef.current.torso) return;
-
+  const applyClothingTo3D = async (imageSrc: string, type: 'shirt' | 'pants') => {
     try {
       const THREE = await import('three');
       const textureLoader = new THREE.TextureLoader();
       
-      const texture = textureLoader.load(imageSrc);
-      texture.flipY = false;
-      texture.colorSpace = THREE.SRGBColorSpace;
+      const texture = textureLoader.load(imageSrc, (tex: any) => {
+        tex.flipY = false;
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.needsUpdate = true;
+      });
+
+      texturesRef.current[type] = document.createElement('img');
+      texturesRef.current[type]!.src = imageSrc;
 
       if (type === 'shirt') {
         if (materialsRef.current.torso) {
@@ -325,14 +309,12 @@ export default function ShowcasePage() {
           materialsRef.current.legs.needsUpdate = true;
         }
       }
-
-      generate2DPreview();
     } catch (err) {
-      console.error('Error applying texture:', err);
+      console.error('Error applying 3D texture:', err);
     }
   };
 
-  const generate2DPreview = () => {
+  const generate2DPreview = (type: 'shirt' | 'pants', imageSrc?: string) => {
     const canvas = document.createElement('canvas');
     canvas.width = 585;
     canvas.height = 559;
@@ -342,38 +324,53 @@ export default function ShowcasePage() {
     ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (shirtImage) {
-      const img = document.createElement('img');
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, 585, 559);
-        if (pantsImage) {
-          const pantsImg = document.createElement('img');
-          pantsImg.onload = () => {
-            ctx.drawImage(pantsImg, 0, 0, 585, 559);
-            setPreview2D(canvas.toDataURL('image/png'));
-          };
-          pantsImg.src = pantsImage;
-        } else {
-          setPreview2D(canvas.toDataURL('image/png'));
-        }
-      };
-      img.src = shirtImage;
-    } else if (pantsImage) {
-      const img = document.createElement('img');
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, 585, 559);
-        setPreview2D(canvas.toDataURL('image/png'));
-      };
-      img.src = pantsImage;
-    }
+    const skinImg = document.createElement('img');
+    skinImg.src = '/dripzels/models/textures/skin.webp';
+
+    const skin2Img = document.createElement('img');
+    skin2Img.src = '/dripzels/models/textures/skin2.webp';
+
+    const shirtImgSrc = shirtImage || '/dripzels/models/textures/baseShirt.png';
+    const pantsImgSrc = pantsImage || '/dripzels/models/textures/basePants.png';
+
+    const shirtImg = document.createElement('img');
+    const pantsImg = document.createElement('img');
+
+    const drawAll = () => {
+      ctx.drawImage(skinImg, 0, 0);
+      ctx.drawImage(shirtImg, 0, 0);
+      ctx.drawImage(pantsImg, 0, 0);
+      ctx.drawImage(skin2Img, 0, 0);
+      setPreview2D(canvas.toDataURL('image/png'));
+    };
+
+    let loadedCount = 0;
+    const checkLoaded = () => {
+      loadedCount++;
+      if (loadedCount === 4) drawAll();
+    };
+
+    shirtImg.onload = checkLoaded;
+    pantsImg.onload = checkLoaded;
+    skinImg.onload = checkLoaded;
+    skin2Img.onload = checkLoaded;
+
+    shirtImg.src = shirtImgSrc;
+    pantsImg.src = pantsImgSrc;
   };
+
+  useEffect(() => {
+    if (!loading && (shirtImage || pantsImage)) {
+      generate2DPreview('shirt');
+    }
+  }, [shirtImage, pantsImage, loading]);
 
   const handleReset = () => {
     setShirtImage(null);
     setPantsImage(null);
     setPreview2D(null);
     setError(null);
-    initScene();
+    window.location.reload();
   };
 
   const handleDownload = () => {
@@ -409,10 +406,9 @@ export default function ShowcasePage() {
                   <Box size={16} /> 3D
                 </button>
                 <button
-                  onClick={() => { setPreviewMode('2d'); generate2DPreview(); }}
-                  disabled={!shirtImage && !pantsImage}
+                  onClick={() => { setPreviewMode('2d'); generate2DPreview('shirt'); }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition ${
-                    previewMode === '2d' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white disabled:opacity-50'
+                    previewMode === '2d' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'
                   }`}
                 >
                   <Image size={16} /> 2D
@@ -502,13 +498,13 @@ export default function ShowcasePage() {
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/jpg"
-                  onChange={handleShirtUpload}
+                  onChange={(e) => handleFileUpload(e, 'shirt')}
                   className="w-full text-text-muted text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-black hover:file:opacity-90"
                 />
                 {shirtImage && (
                   <div className="mt-3 flex items-center gap-3">
                     <img src={shirtImage} alt="Shirt" className="w-16 h-16 object-cover rounded border border-border" />
-                    <button onClick={() => setShirtImage(null)} className="text-red-400 text-sm hover:text-red-300">Remove</button>
+                    <button onClick={() => { setShirtImage(null); generate2DPreview('shirt'); }} className="text-red-400 text-sm hover:text-red-300">Remove</button>
                   </div>
                 )}
               </div>
@@ -518,13 +514,13 @@ export default function ShowcasePage() {
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/jpg"
-                  onChange={handlePantsUpload}
+                  onChange={(e) => handleFileUpload(e, 'pants')}
                   className="w-full text-text-muted text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-black hover:file:opacity-90"
                 />
                 {pantsImage && (
                   <div className="mt-3 flex items-center gap-3">
                     <img src={pantsImage} alt="Pants" className="w-16 h-16 object-cover rounded border border-border" />
-                    <button onClick={() => setPantsImage(null)} className="text-red-400 text-sm hover:text-red-300">Remove</button>
+                    <button onClick={() => { setPantsImage(null); generate2DPreview('pants'); }} className="text-red-400 text-sm hover:text-red-300">Remove</button>
                   </div>
                 )}
               </div>
@@ -548,16 +544,10 @@ export default function ShowcasePage() {
             )}
           </div>
 
-          {(shirtImage || pantsImage) && previewMode === '2d' && (
+          {previewMode === '2d' && preview2D && (
             <div className="bg-card-bg rounded-xl p-4">
               <h3 className="text-white font-bold mb-3">2D Export</h3>
-              <img src={preview2D!} alt="2D Preview" className="w-full rounded-lg border border-border" />
-              <button
-                onClick={handleDownload}
-                className="w-full mt-3 py-2 bg-primary text-black font-bold rounded-lg hover:opacity-90"
-              >
-                Download PNG
-              </button>
+              <img src={preview2D} alt="2D Preview" className="w-full rounded-lg border border-border" />
             </div>
           )}
         </div>
