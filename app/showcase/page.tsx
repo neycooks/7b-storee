@@ -258,7 +258,7 @@ export default function ShowcasePage() {
 
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const img = new Image();
+      const img = document.createElement('img');
       img.onload = () => {
         if (img.width !== 585 || img.height !== 559) {
           setError('The image must be 585x559 pixels! This is the Roblox clothing standard.');
@@ -284,7 +284,7 @@ export default function ShowcasePage() {
 
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const img = new Image();
+      const img = document.createElement('img');
       img.onload = () => {
         if (img.width !== 585 || img.height !== 559) {
           setError('The image must be 585x559 pixels! This is the Roblox clothing standard.');
@@ -343,11 +343,11 @@ export default function ShowcasePage() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (shirtImage) {
-      const img = new Image();
+      const img = document.createElement('img');
       img.onload = () => {
         ctx.drawImage(img, 0, 0, 585, 559);
         if (pantsImage) {
-          const pantsImg = new Image();
+          const pantsImg = document.createElement('img');
           pantsImg.onload = () => {
             ctx.drawImage(pantsImg, 0, 0, 585, 559);
             setPreview2D(canvas.toDataURL('image/png'));
@@ -359,7 +359,7 @@ export default function ShowcasePage() {
       };
       img.src = shirtImage;
     } else if (pantsImage) {
-      const img = new Image();
+      const img = document.createElement('img');
       img.onload = () => {
         ctx.drawImage(img, 0, 0, 585, 559);
         setPreview2D(canvas.toDataURL('image/png'));
