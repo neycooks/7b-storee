@@ -270,9 +270,9 @@ export default function ShowcasePage() {
   };
 
   const generate2DPreview = useCallback(() => {
+    const canvasWidth = 256;
+    const canvasHeight = 384;
     const canvas = document.createElement('canvas');
-    const canvasWidth = 500;
-    const canvasHeight = 500;
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
     const ctx = canvas.getContext('2d');
@@ -282,37 +282,25 @@ export default function ShowcasePage() {
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     ctx.imageSmoothingEnabled = false;
 
-    const drawShirt = (shirtImg: HTMLImageElement) => {
-      const shirtCanvas = document.createElement('canvas');
-      shirtCanvas.width = 256;
-      shirtCanvas.height = 456;
-      const shirtCtx = shirtCanvas.getContext('2d');
-      if (!shirtCtx) return;
-      shirtCtx.imageSmoothingEnabled = false;
-      
-      shirtCtx.drawImage(shirtImg, 131, 0, 128, 64, 64, 0, 128, 64);
-      shirtCtx.drawImage(shirtImg, 131, 9, 128, 64, 64, 64, 128, 64);
-      shirtCtx.drawImage(shirtImg, 131, 73, 128, 128, 64, 128, 128, 128);
-      shirtCtx.drawImage(shirtImg, 131, 201, 128, 72, 64, 256, 128, 72);
-      shirtCtx.drawImage(shirtImg, 44, 73, 64, 128, 0, 128, 64, 128);
-      shirtCtx.drawImage(shirtImg, 438, 73, 64, 128, 192, 128, 64, 128);
-      
-      ctx.drawImage(shirtCanvas, (canvasWidth - 256) / 2, 20);
+    const drawCombined = (shirtImg: HTMLImageElement, pantsImg: HTMLImageElement) => {
+      ctx.drawImage(shirtImg, 131, 0, 128, 64, 64, 0, 128, 64);
+      ctx.drawImage(shirtImg, 131, 73, 128, 128, 64, 64, 128, 128);
+      ctx.drawImage(shirtImg, 44, 73, 64, 128, 0, 64, 64, 128);
+      ctx.drawImage(shirtImg, 438, 73, 64, 128, 192, 64, 64, 128);
+      ctx.drawImage(pantsImg, 131, 273, 64, 128, 64, 192, 64, 128);
+      ctx.drawImage(pantsImg, 195, 273, 64, 128, 128, 192, 64, 128);
     };
 
-    const drawPants = (pantsImg: HTMLImageElement) => {
-      const pantsCanvas = document.createElement('canvas');
-      pantsCanvas.width = 192;
-      pantsCanvas.height = 456;
-      const pantsCtx = pantsCanvas.getContext('2d');
-      if (!pantsCtx) return;
-      pantsCtx.imageSmoothingEnabled = false;
-      
-      pantsCtx.drawImage(pantsImg, 131, 201, 128, 72, 32, 0, 128, 72);
-      pantsCtx.drawImage(pantsImg, 131, 273, 64, 128, 64, 328, 64, 128);
-      pantsCtx.drawImage(pantsImg, 195, 273, 64, 128, 128, 328, 64, 128);
-      
-      ctx.drawImage(pantsCanvas, (canvasWidth - 192) / 2, 20);
+    const drawShirtOnly = (shirtImg: HTMLImageElement) => {
+      ctx.drawImage(shirtImg, 131, 0, 128, 64, 64, 0, 128, 64);
+      ctx.drawImage(shirtImg, 131, 73, 128, 128, 64, 64, 128, 128);
+      ctx.drawImage(shirtImg, 44, 73, 64, 128, 0, 64, 64, 128);
+      ctx.drawImage(shirtImg, 438, 73, 64, 128, 192, 64, 64, 128);
+    };
+
+    const drawPantsOnly = (pantsImg: HTMLImageElement) => {
+      ctx.drawImage(pantsImg, 131, 273, 64, 128, 64, 0, 64, 128);
+      ctx.drawImage(pantsImg, 195, 273, 64, 128, 128, 0, 64, 128);
     };
 
     if (shirtImage && pantsImage) {
@@ -328,8 +316,7 @@ export default function ShowcasePage() {
       const checkDone = () => {
         loaded++;
         if (loaded === 2) {
-          drawShirt(shirtImg);
-          drawPants(pantsImg);
+          drawCombined(shirtImg, pantsImg);
           setPreview2D(canvas.toDataURL('image/png'));
         }
       };
@@ -341,7 +328,7 @@ export default function ShowcasePage() {
       shirtImg.crossOrigin = 'anonymous';
       shirtImg.src = shirtImage;
       shirtImg.onload = () => {
-        drawShirt(shirtImg);
+        drawShirtOnly(shirtImg);
         setPreview2D(canvas.toDataURL('image/png'));
       };
     } else if (pantsImage) {
@@ -349,7 +336,7 @@ export default function ShowcasePage() {
       pantsImg.crossOrigin = 'anonymous';
       pantsImg.src = pantsImage;
       pantsImg.onload = () => {
-        drawPants(pantsImg);
+        drawPantsOnly(pantsImg);
         setPreview2D(canvas.toDataURL('image/png'));
       };
     } else {
@@ -357,7 +344,7 @@ export default function ShowcasePage() {
       baseImg.crossOrigin = 'anonymous';
       baseImg.src = '/2dprev.jpg';
       baseImg.onload = () => {
-        ctx.drawImage(baseImg, 0, 0, canvasWidth, canvasHeight);
+        ctx.drawImage(baseImg, 0, 0, 256, 384);
         setPreview2D(canvas.toDataURL('image/png'));
       };
     }
