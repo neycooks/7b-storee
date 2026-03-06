@@ -296,7 +296,7 @@ export default function ShowcasePage() {
     };
 
     const loadAndDraw = () => {
-      if (shirtImage && !isPants) {
+      if (shirtImage) {
         ctx.drawImage(document.createElement('img'), 0, 0);
         
         const shirtImg = document.createElement('img');
