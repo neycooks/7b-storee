@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, ShoppingBag, FileText, Info, Star, X, Menu } from 'lucide-react';
+import { LayoutGrid, ShoppingBag, FileText, Info, Star, Grid, Menu, X } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Discover', icon: LayoutGrid },
   { href: '/products', label: 'Marketplace', icon: ShoppingBag },
   { href: '/gamepass', label: 'Gamepass', icon: Star },
+  { href: '/showcase', label: 'Showcases', icon: Grid },
+  { href: '/menu', label: 'Menu', icon: Menu },
   { href: '/policies', label: 'Policies', icon: FileText },
   { href: '/about', label: 'About Us', icon: Info },
 ];

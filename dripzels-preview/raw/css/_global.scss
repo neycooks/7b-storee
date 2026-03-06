@@ -1,0 +1,456 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;700&display=swap');
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/materialicons/v140/flUhRq6tzZclQEJ-Vdg-IuiaDsNc.woff2) format('woff2');
+}
+
+
+$text: #cfcfcf;
+$background: #0d0d0d;
+$primary: #9B89F1;
+$secondary: #241830;
+$accent: #7515D5;
+
+*{
+  font-family: inter;
+}
+::selection{
+  background-color: $primary;
+  color: $background;
+}
+::-webkit-scrollbar{
+  width: 10px;
+  background-color: transparent;
+}
+::-webkit-scrollbar-thumb{
+  background-color: lighten($color: $background, $amount: 8);
+  border-radius: 1rem;
+}
+
+hr{
+  border: none;
+  border-top: 1px solid rgba(128, 128, 128, 0.3) !important;
+  margin: 0;
+}
+h1, h2, h3, h4, h5, h6, p, a{
+  margin: 0;
+}
+a:not(.noLinkCss){
+  color: lighten($primary, 30);
+}
+a[target="_blank"]:not(.noLinkCss)::after {
+  font-family: 'Material Icons';
+  content: "open_in_new";
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 1em;
+  color: inherit !important;
+}
+
+// Range
+input[type="range"] {
+  -webkit-appearance: none;
+  background: $text;
+  height: .3rem;
+  border-radius: 1rem;
+
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 1rem;
+  height: 1rem;
+  background: $primary;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 1rem;
+  height: 1rem;
+  background: $primary;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover{
+  background: lighten($color: $accent, $amount: 20);
+}
+input[type="range"]::-moz-range-thumb:hover {
+  background: lighten($color: $accent, $amount: 20);
+}
+
+// Checkbox
+input[type="checkbox"] {
+  appearance: none;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  display: inline-block;
+  width: 3.1rem; 
+  height: 1.5rem; 
+  border-radius: 1.3rem;
+  background-color: lighten($background, 20);
+  transition: background-color .15s;
+  
+  &:checked {
+    background-color: darken(desaturate($color: $primary, $amount: 30), 30);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: .25rem;
+    left: .3rem;
+    width: 1rem;
+    height: 1rem; 
+    background-color: lighten($color: rgba($background, .7), $amount: 50);
+    border-radius: 50%;
+    transition: transform 0.15s, background-color 0.15s;
+  }
+
+  &:checked::before {
+    transform: translateX(1.6rem); 
+    background-color: $primary;
+  }
+}
+
+// Number
+input[type="number"] {
+  font-size: 1.3rem;
+  width: 85%;
+  padding: 1rem;
+  color: $text;
+  border: none;
+  border-radius: 1rem;
+  outline: none;
+  text-align: center;
+  cursor: pointer;
+  background-color: lighten($color: $background, $amount: 8);
+  transition: background .15s;
+  -moz-appearance: textfield;
+
+  // Remove the default spin buttons in webkit browsers
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+  
+  // Hover styles
+  &:hover {
+    background-color: lighten($color: $background, $amount: 10);
+  }
+  
+  // Focus styles
+  &:focus {
+    background-color: lighten($color: $background, $amount: 10);
+  }
+
+  // Placeholder styles
+  &::placeholder {
+    color: darken($color: $text, $amount: 40);
+    font-size: 1.2rem;
+  }
+}
+
+// Code
+code{
+  background: black;
+  padding: 1rem;
+  border-radius: .3rem;
+  color: lightcoral;
+  font-weight: 200;
+  font-family: monospace;
+  letter-spacing: 1px;
+  word-spacing: -3px;
+}
+
+
+// Mixins 📌
+@mixin inheritDisplay{
+  display: inherit;
+  flex-direction: inherit;
+  justify-content: inherit;
+  align-items: inherit;
+  gap: inherit;
+}
+@mixin flexCenter{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+@mixin menuStyle{
+  cursor: pointer;
+  background-color: lighten($color: $background, $amount: 8);
+  border-radius: 1rem;
+  transition: background .15s;
+
+  &:hover{
+    background-color: lighten($color: $background, $amount: 15);
+  }
+
+  p{
+    margin: 0;
+    color: darken($color: $text, $amount: 5);
+    font-weight: 300;
+  }
+}
+@mixin bgAndHover{
+  background-color: lighten($color: $background, $amount: 8);
+  cursor: pointer;
+  transition: background .15s;
+  &:hover{
+    background-color: lighten($color: $background, $amount: 15);
+  }
+}
+@mixin selected{
+  background-color: $text !important;
+  color: $background !important;
+  font-weight: 500 !important;
+  transition: .3s;
+
+  p, h1, h2, h3, h4, h5, h6{
+    color: $background !important;
+    font-weight: 700;
+  }
+
+  img{
+    filter: brightness(10%);
+  }
+
+  &:hover{
+    background-color: $text;
+    img{
+      filter: brightness(10%) !important;
+    }
+  }
+}
+
+// Animations 📌
+@keyframes fadeInOut {
+  0%   {opacity: 1;}
+  50%  {opacity: .5;}
+  100% {opacity: 1;}
+}
+
+
+// Classes 📌
+.material-symbols-outlined{user-select: none;}
+.noLinkCss{
+  text-decoration: none;
+}
+.webLink{
+  width: fit-content;
+  height: 1.4em;
+  display: inline-flex;
+  align-items: center;
+  
+  text-wrap: nowrap;
+  color: currentColor !important;
+  text-decoration: none;
+  font-weight: 400;
+  font-size: .9em;
+  padding: 0 .5em;
+  background-color: rgba($color: $accent, $alpha: .4);
+  border-radius: .4rem;
+  transition: background .15s;
+
+  img{height: .8em; margin-right: .2em;}
+
+  &:hover{
+    background-color: rgba($color: $accent, $alpha: .6);
+  }
+}
+.selected{
+  @include selected;
+}
+
+.polka {
+  background-image: 
+    radial-gradient(lighten($background, 6) 14%, transparent 14%);
+  background-position: .5rem .5rem;
+  background-size: 1rem 1rem;
+  background-color: transparent;
+}
+
+.RobuxIcon::before {
+  content: "";
+  display: inline-block; /* Added display property */
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-left: -1.7rem;
+  position: absolute;
+  background-image: url('../images/icons/Icon_Robux.webp');
+  background-size: 100%; /* Adjust as needed */
+  background-repeat: no-repeat;
+}
+
+#DevExUSD.RobuxIcon::before {
+  background-image: none;
+  content: "$";
+  position: absolute;
+  margin-left: -1.15rem;
+  color: $text;
+  font-weight: 400;
+}
+
+.close-button {
+  @include flexCenter();
+  font-size: 2rem;
+  background-color: lighten($color: $background, $amount: 10);
+  border: none;
+  cursor: pointer;
+  padding: .2rem;
+  border-radius: 50%;
+  transition: rotate .3s;
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 1rem;
+
+  &:hover{
+    rotate: 90deg;
+  }
+}
+
+.close-button svg {
+  width: 2rem;
+  height: 2rem;
+  fill: $text;
+}
+
+button{
+  @include bgAndHover();
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.3rem;
+  font-weight: 500;
+  border-radius: .5rem;
+  padding: 0;
+  width: fit-content;
+  gap: .7rem;
+  border: none;
+  text-wrap: nowrap;
+  overflow: hidden;
+  img{
+    min-width: 25%;
+    max-width: 1.5rem;
+    border-radius: 0rem;
+  }
+  a {
+    @include flexCenter();
+    gap: inherit;
+    width: fit-content;
+    height: 100%;
+    padding: 1rem 2rem;
+    text-decoration: none;
+
+    p{user-select: none !important;}
+}
+}
+
+.ButtonPrimary{
+  background-color: $primary;
+  p,span, a{color: $background !important;}
+  transition: .3s;
+
+  img{
+    filter: brightness(0%);
+  }
+
+
+  &:hover{
+    background-color: lighten($color: $primary, $amount: 5);
+    transform: translateY(-.3rem);
+    box-shadow: 0 0 3rem .3rem rgba($color: $primary, $alpha: .7);
+  }
+}
+
+.homeTitle{
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: .1rem;
+  padding: 0;
+  font-size: 2rem;
+  .titleColor {
+    color: $primary;
+  }
+
+  p{
+    font-size: .8rem;
+    font-weight: 200;
+    margin-bottom: .4em;
+  }
+  img{
+    width: 1.5em;
+  }
+}
+
+
+// Loading 
+$base-font-size: 16px;
+
+.lds-ellipsis {
+  display: inline-block;
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 4.5rem;
+  height: 1.5rem;
+
+  div {
+    position: absolute;
+    top: 0.5rem;
+    left: 0;
+    width: 0.7rem;
+    height: 0.7rem;
+    margin: 0;
+    border-radius: 50%;
+    background: hsla(0, 0%, 50%, 1);
+    animation-timing-function: cubic-bezier(0, 1, 1, 0);
+
+    &:nth-child(1) {
+      left: 0.5rem;
+      animation: lds-ellipsis1 0.6s infinite;
+    }
+
+    &:nth-child(2) {
+      left: 0.5rem;
+      animation: lds-ellipsis2 0.6s infinite;
+    }
+
+    &:nth-child(3) {
+      left: 2rem;
+      animation: lds-ellipsis2 0.6s infinite;
+    }
+
+    &:nth-child(4) {
+      left: 3.5rem;
+      animation: lds-ellipsis3 0.6s infinite;
+    }
+  }
+}
+
+@keyframes lds-ellipsis1 {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+
+@keyframes lds-ellipsis3 {
+  0% { transform: scale(1); }
+  100% { transform: scale(0); }
+}
+
+@keyframes lds-ellipsis2 {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(1.5rem, 0); }
+}
+

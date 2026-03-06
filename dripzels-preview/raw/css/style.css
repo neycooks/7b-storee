@@ -1,0 +1,559 @@
+@import url("https://fonts.googleapis.com/css2?family=Flow+Rounded&family=Inter:wght@200;300;400&display=swap");
+:root {
+  --primary: 18, 18, 18;
+  --secondary: 25, 25, 25;
+  --extra: 12, 12, 12;
+}
+* {
+  font-family: inter;
+}
+/* width */
+::-webkit-scrollbar {
+  width: .4em;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  border-radius: 1em;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+html{width: 100%; height: 100%;}
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: black;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+canvas {
+  cursor: grab;
+  z-index: -1;
+  top: 0;
+  left: 0;
+  position: fixed;
+  filter: sharpen;
+}
+.closeButton {
+  position: absolute;
+  left: 100%;
+  transform: translate(-100%);
+}
+
+
+#errorMenu {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(15px) brightness(70%);
+  -webkit-backdrop-filter: blur(15px) brightness(70%);
+
+  color: white;
+  z-index: 30;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity .3s;
+}
+#errorMenu.open{
+  opacity: 1;
+  visibility: visible;
+  pointer-events: all;
+}
+.errorPart {
+  min-width: 15em;
+  min-height: 7.5em;
+  padding: 3em 4em;
+  border-radius: 1em;
+  border: 1px solid hsl(0, 36%, 37%);
+  background-color: rgba(var(--primary), .7);
+  display: flex;
+  flex-direction: column;
+}
+.errorPart div{
+  display: flex;
+  gap: 2em;
+  justify-content: space-between;
+  align-items: center;
+}
+.errorPart button{
+  background-color: rgb(var(--extra));
+  border: 1px solid hsl(0, 36%, 37%);
+  color: white;
+  max-height: 2em;
+  border-radius: .3em;
+  min-width: 15px;
+  min-height: 15px;
+  cursor: pointer;
+}
+.errorPart button:hover{filter: brightness(50%);}
+#errorMenu hr {
+  border: none;
+  border-top: 1px solid hsl(0, 36%, 37%);
+  width: 100%;
+}
+#creds{
+  user-select: none;
+  cursor: grab;
+  z-index: 10;
+  top: 100%;
+  right: .3%;
+  position: absolute;
+  color: rgba(90, 90, 90, 0.479);
+  font-weight: 200;
+  transform: translate(0, -203%);
+}
+.underline{text-decoration: underline;}
+
+.uploadMenu{
+  z-index: 2;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  
+  background-color: rgb(var(--primary), 0.7);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+
+  box-shadow: 3px 4px 7px 4px rgba(0, 0, 0, 0.4);
+  border-radius: 2em;
+  display: flex;
+  justify-content: space-between;
+  max-height: 6em;
+  max-width: 20em;
+  top: 96%;
+  border-radius: 1em;
+  border: var(--borderDark);
+}
+
+.svg-container {
+  width: 70px; /* Adjust the width as needed */
+  height: 70px; /* Adjust the height as needed */
+}
+.uploadButton {
+  fill: rgba(170, 170, 170, 1);
+  stroke: rgba(170, 170, 170, 1);
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0);
+  cursor: pointer;
+  transition: fill 0.3s, background-color 0.3s, stroke .3s;
+  display: flex;
+  align-content: center;
+  justify-content: center;
+  align-items: center;
+}
+.uploadButton:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+  fill: white;
+  stroke: white;
+}
+#shirtUpload,
+#pantsUpload {
+  display: none;
+}
+.TopMenu{
+  height: 100%;
+  max-width: 17rem;
+  max-height: 3em;
+  width: 100%;
+  position: absolute;
+  left: 50%;
+  top: 2rem;
+  transform: translateX(-50%);
+  z-index: 2;  
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  user-select: none;
+}
+.renderType {
+  height: 100%;
+  width: 53%;
+
+  background-color: rgb(var(--extra), 0.75);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  box-shadow: 0 1em 1em rgba(0, 0, 0, 0.5);
+  border-radius: .7rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+.TopMenu-Button{
+  width: 20%;
+  height: 100%;
+
+  background-color: rgb(var(--extra), 0.75);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  box-shadow: 0 1em 1em rgba(0, 0, 0, 0.5);
+  border-radius: .7rem;
+  color: white;
+  font-size: .5rem;
+  cursor: pointer;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.TopMenu-Button img{
+  max-height: 3em;
+  max-width: 3em;
+}
+.renderOption{
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+.renderOption img {
+  height: fit-content;
+  width: 2em;
+}
+.tooltipText {
+  user-select: none;
+  color: white;
+  background: #191919;
+
+  box-shadow: 3px 4px 7px 4px rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  font-weight: 100;
+  font-size: 1rem;
+  padding: 0.4rem;
+  white-space: nowrap;
+
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: 120%;
+  z-index: 3;
+}
+/* Arrows */
+/* Top Arrow */
+.ToolTip-TopArrow .tooltipText::after {
+  content: " ";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-left: -7px;
+  border-width: 7px;
+  border-style: solid;
+  border-color: transparent transparent #191919 transparent;
+}
+/* Left Arrow */
+.ToolTip-LeftArrow .tooltipText::after {
+  content: " ";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translate(-100%, -50%);
+  border-width: 7px;
+  border-style: solid;
+  border-color: transparent #191919 transparent transparent;
+}
+.tooltipItem:hover .tooltipText{
+  opacity: 1;
+  visibility: visible;
+  transition: opacity .3s;
+}
+.TopMenu-Button:hover,
+.renderOption:hover {
+  background-color: rgba(var(--secondary));
+}
+#closeMainMenu {
+  height: 4%;
+  margin-left: auto;
+  cursor: pointer;
+  fill: rgb(125, 125, 125);
+  stroke: rgb(125, 125, 125);
+  transition: fill .1s, stroke .1s;
+  position: absolute;
+  right: 10px;
+}
+#closeMainMenu:hover{
+  fill: white;
+  stroke: white;
+}
+#image2D{
+  max-width: 749px;
+  max-height: 350px;
+  height: fit-content;
+  width: 100%;
+  object-fit: contain;
+  cursor: pointer;
+  transition: filter .2s, border .2s;
+}
+#image2D:hover{
+  filter: brightness(1.1);
+}
+.menuButton{
+  max-width: 749px;
+  width: 100%;
+  padding: 1em 0 1em 0;
+  display: flex;
+  align-items: center;
+  background-color: var(--backgroundLight1);
+  border: var(--border);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background-color 0.3s, border .3s, color .3s;
+  display: flex;
+  align-content: center;
+  justify-content: center;
+  align-items: center;
+}
+.menuButton:hover{
+  background-color: var(--backgroundLight2);
+  border: var(--borderLight);
+  color: white;
+}
+.bold{
+  font-weight: 600;
+  color: white;
+}
+
+.popupContainer {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(15px) brightness(70%);
+  -webkit-backdrop-filter: blur(15px) brightness(70%);
+
+  color: white;
+  z-index: 9;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s;
+}
+.popupContainer.open{
+  opacity: 1;
+  pointer-events: all;
+}
+.popupMenu{
+  min-width: 25%;
+  min-height: 10%;
+  max-width: 75%;
+  max-height: 80%;
+
+  border-radius: 1em;
+  background-color: rgba(var(--primary), .7);
+  padding: 2em;
+
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  overflow-y: scroll;
+}
+.popupMenuTitle{
+  display: flex;
+  height: fit-content;
+  font-size: .7em;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+}
+.popupMenuTitle button{
+  height: 3em;
+  width: 5em;
+
+  font-size: 1em;
+  border: none;
+  padding: .3em;
+  border-radius: .3em;
+  color: white;
+  background-color: rgb(var(--extra));
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.popupMenuTitle button:hover{
+  filter: brightness(50%);
+}
+.popupMenuContainer{
+  width: 100%;
+}
+#menu2D{
+  width: 100%;
+  height: 100%;
+  display: none;
+  align-items: center;
+  gap: 1rem;
+  margin-top: .7rem;
+  flex-direction: column;
+  font-size: .9em;
+  color: lightgray;
+}
+#updateLog{ 
+  min-height: 50em;
+  width: 100%;
+  height: 100%;
+
+  display: none;
+  flex-direction: column;
+  margin-top: 1em;
+
+  font-size: .7em;
+}
+.updateLogTitle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  font-size: 2em;
+  gap: .9rem;
+}
+.updateLogTitle p {
+  font-size: .9rem !important;
+  font-weight: 200;
+  color: darkgray !important;
+  max-width: 90%;
+  text-align: center;
+}
+#updateLog p, #updateLog ul{
+  line-height: 1.5em;
+  color: rgb(185, 185, 185);
+  font-size: 1.3em;
+  box-sizing: border-box;
+}
+#updateLog > ul > li > ul{
+  border-left: 1px solid;
+  font-size: .7rem; 
+  font-weight: 200;
+}
+#updateLog ul li{
+  font-size: 1rem;
+  margin-top: 1.3rem;
+  width: 95%;
+}
+#updateLog ul > li > ul > li {
+  margin-top: .4rem;
+  border: none;
+}
+
+
+.bottomBar{
+  z-index: 100;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 100%);
+  color: rgba(255, 255, 255, .3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  position: fixed;
+  bottom: 0;
+  font-size: .7rem;
+
+  width: 100%;
+  height: 3%;
+  display: flex;
+}
+a{
+  color: currentColor;
+  font-weight: 900;
+}
+
+.MenuBorder{
+  border: var(--border);
+}
+
+.dropZone{
+  position: relative;
+  z-index: 9;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  opacity: 1;
+}
+
+#Drop-backdrop{
+  position: relative;
+  z-index: 9;
+  width: 100%;
+  height: 100%;
+  
+  background-color: rgba(var(--extra), .7);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  box-sizing: border-box;
+  transition: .5s;
+
+  display: flex;
+}
+.dropOption{
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  cursor: pointer;
+  backdrop-filter: brightness(20%);
+  -webkit-backdrop-filter: brightness(20%);
+
+  stroke: hsl(0, 0%, 30%);
+  box-sizing: border-box;
+  transition: backdrop-filter .3s, stroke .3s;
+  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.dropOption svg{
+  max-width: 50%;
+  pointer-events: none;
+}
+.dropOption.hovering{
+  backdrop-filter: brightness(80%);
+  -webkit-backdrop-filter: brightness(80%);
+
+  stroke: hsl(0, 0%, 90%);
+}
+
+#Drop-backdrop.hidden{
+  visibility: hidden;
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+}
+#Drop-backdrop.visible{
+  position: absolute;
+  pointer-events: auto;
+  opacity: 1;
+  visibility: visible !important;
+}
+
+
+/* For pc */
+
+@media only screen and (min-width: 1024px) {
+  
+  #updateLog{
+    min-height: auto;
+    font-size: .8em;
+  }
+}

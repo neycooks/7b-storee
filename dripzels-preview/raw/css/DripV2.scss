@@ -1,0 +1,982 @@
+@import "./global";
+
+svg, a, p, h1, h2, h3, h4, h5, h6{color: $text; font-family: Arial, Helvetica, sans-serif; font-family: Inter;}
+
+html, body, .body{
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  // gap: .3%;
+  width: 100vw;
+  padding: 0;
+  margin: 0;
+  font-size: calc((.5em + 1vw) - .8em);
+  color: $text;
+  overflow: hidden;
+  scroll-behavior: smooth;
+
+  // Mobile
+  @media only screen and (max-width: 768px) {
+    font-size: calc((.4em + 1vh));
+    gap: 0;
+  }
+  
+  // Desktop
+  @media only screen and (min-width: 768px) and (max-width: 1600px) {
+    font-size: calc((.4em + 1vh));
+    #section25{
+      min-width: 370px;
+      .NavBar{
+        p{
+          font-size: .6rem !important;
+        }
+      }
+    }
+
+    button{
+      font-size: 1rem;
+    }
+}
+body{
+  flex-direction: column;
+}
+
+  background-color: black;
+}
+
+*{max-height: 100vh;}
+*{max-height: 100dvh;}
+
+
+#section-Popup{
+
+
+  @include flexCenter;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  overflow-y: auto;
+  position: absolute;
+  z-index: 5;
+  backdrop-filter: grayscale(70%) brightness(40%) blur(2px);
+  opacity: 0;
+  transition: opacity .3s;
+
+  display: none;
+  &.visible {display: flex;}
+
+
+
+  & > div{pointer-events: all;}
+  .Popup-Error{
+    z-index: 50;
+    padding: 1rem;
+    padding-top: 4rem;
+    @include flexCenter;
+    flex-direction: column;
+    position: relative;
+    gap: 1rem;
+    display: none;
+
+    border-radius: 1rem;
+    background-color: $background;
+    border: 1px solid lightcoral;
+
+    h3{
+      position: absolute;
+      top: 1.3rem;
+      text-align: center;
+    }
+    hr{
+      width: 100%;
+    }
+    #ErrorMessage{
+      padding: 2rem;
+      @include flexCenter;
+    }
+  }
+
+  .Popup-UpdateLog{
+    
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    position: absolute;
+    top: 0;
+    width: 100dvw;
+    min-height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    font-size: 1.3rem;
+
+    box-sizing: border-box;
+    padding: 1rem 10%;
+    background-color: $background;
+
+    display: none;
+    &.visible {
+      display: flex !important;
+    }
+
+    .close-button{
+      position: fixed;
+    }
+
+
+    h1{font-size: 1.7rem;}
+
+    .HomeTop{
+      display: flex;
+      flex-direction: column;
+      text-align: center;
+      gap: .3rem;
+      font-size: 3.5rem;
+      padding: .5rem 0 .5rem 0;
+
+      p{
+        font-size: .9rem;
+        font-weight: 200;
+        color: darken($color: $text, $amount: 10);
+      }
+      a{
+        color: currentColor;
+      }
+    }
+
+    .updateContent{
+      width: 100%;
+      max-height: 200dvh;
+      margin-top: 1.5rem;
+      @include flexCenter;
+      align-items: flex-start;
+      flex-direction: column;
+      position: relative;
+      gap: 2rem;
+
+      & > div {
+        @include inheritDisplay;
+        gap: .5rem;
+      }
+
+      h2{font-size: 1.7rem; font-weight: 600;}
+      p,li{
+        font-weight: 300;
+        font-size: .9em;
+        line-height: 1.3rem;
+        color: darken($color: $text, $amount: 5) !important;
+      }
+
+      .UpdateChangesList {
+        border: 1px $accent;
+        border-style: solid none solid solid;
+        border-radius: 1rem 0 0 1rem;
+        padding: .7rem 0 .7rem 0;
+
+        h3{
+          font-size: 1.3rem;
+          font-weight: 400;
+          margin-left: 1.3rem;
+          margin-bottom: .5rem;
+        }
+      
+
+        li{
+          font-size: 1rem;
+          font-weight: 300;
+          margin-bottom: .1rem;
+          &::marker {content: "• ";}
+        }
+
+      
+        ul {
+          margin-left: .8rem;
+          padding-left: 1.7rem;
+        }
+      
+        ul:nth-child(2) {
+          border-left: 1px solid green;
+        }
+      
+        ul:nth-child(5) {
+          border-left: 1px solid goldenrod;
+        }
+      
+        ul:nth-child(8) {
+          border-left: 1px solid red;
+        }
+      }
+      
+    }
+
+
+
+    hr{
+      width: 100%;
+    }
+  }
+}
+
+
+#section25 {
+  z-index: 3;
+  height: 100vh;
+  height: 100dvh;
+  max-width: 23%;
+  min-width: 300px;
+  display: flex;
+  background-color: $background;
+  // border-radius: 0 1rem 1rem 0;
+  border-right: 1px solid rgba($color: $text, $alpha: .1);
+  overflow: hidden;
+
+  // Classes
+  .NavBar {
+    @include flexCenter;
+    justify-content: left;
+    flex-direction: column;
+    gap: 1rem;
+
+    background-color: darken($background, 0);
+    height: 100%;
+    width: 23%;
+    padding-top: 1rem;
+    transition: width .3s;
+
+    .NavButton {
+      @include flexCenter;
+      flex-direction: column;
+      width: 70%;
+      padding: 5%;
+      cursor: pointer;
+      border-radius: 20%;
+      position: relative;
+      transition: background 0.15s;
+
+      &:not(.NavButton-Selected):hover {
+        background-color: lighten($background, 15);
+
+        img,
+        p {
+          filter: brightness(125%);
+        }
+      }
+
+
+      img {
+        width: 100%;
+        max-width: 75%;
+        height: auto;
+        aspect-ratio: 1/1;
+        object-fit: contain;
+        transition: filter 0.15s;
+        pointer-events: none;
+        user-select: none;
+      }
+      
+      p {
+        font-size: .75rem;
+        font-weight: 500;
+        margin: 0;
+        margin-top: .1rem;
+        pointer-events: none;
+        color: $text;
+        transition: filter 0.15s;
+        text-wrap: nowrap;
+      }
+    }
+    #NavButton-Preview{
+      display: none;
+    }
+
+    hr {
+      width: 80%;
+      margin: 0;
+      margin-top: -5%;
+    }
+
+  }
+
+  .OptionMenu {
+    display: flex;
+    height: auto;
+    width: 82%;
+    margin: 0;
+    padding: 0 .5rem;
+    background-color: lighten($background, 2);
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable both-edges;
+
+    .OptionMenu-Page {
+      @include flexCenter;
+      flex-direction: column;
+      justify-content: flex-start;
+      width: 100%;
+      height: fit-content;
+      gap: 1rem;
+      padding: .5rem;
+      padding-top: 1rem;
+      color: $text;
+      position: relative;
+
+      hr {
+        width: 100%;
+        border-top: 1px solid rgba(128, 128, 128, 0.5) !important;
+        margin: 0;
+      }
+
+      & > div > div{
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+      }
+      & > div > div > div{ // Options
+        width: 85%;
+        padding: 1rem;
+        h4{
+          font-weight: 400;
+          color: darken($color: $text, $amount: 20);
+        }
+      }
+      @mixin pageLayout{        
+        @include flexCenter;
+        width: 100%;
+        flex-direction: column;
+        justify-content: flex-start;
+        gap: 1rem;
+
+        img {
+          width: 50%;
+          user-select: none;
+        }
+
+        p{
+          color: $text;
+          user-select: none;
+        }
+      }
+      
+      .OptionPage-home{
+        @include pageLayout();
+        p{user-select: auto;}
+        
+
+        .HomeTop{
+          display: flex;
+          gap: .3rem;
+          font-size: 2rem;
+          padding: .5rem 0 .5rem 0;
+
+          .homeTitle{
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: .1rem;
+            padding: 0;
+
+            p{
+              font-size: .8rem;
+              font-weight: 200;
+              margin-bottom: .3rem;
+            }
+
+            
+          }
+          .titleColor {
+            color: $primary;
+          }
+
+          p{
+            font-size: .9rem;
+            font-weight: 200;
+            color: darken($color: $text, $amount: 10);
+          }
+          a{
+            color: currentColor;
+          }
+        }
+
+
+        .homeRelatedButtons{
+          display: flex;
+          flex-direction: row;
+        }
+
+        button{width: 100%;}
+
+        .homeShop{
+          filter: brightness(80%);
+          backdrop-filter: brightness(80%);
+          cursor: not-allowed;
+          user-select: none;
+          padding: 1rem;
+          padding-bottom: 100%;
+          font-weight: 200;
+          border-radius: 1rem;
+        }
+
+      }
+
+      .OptionPage-Clothing {
+        @include pageLayout;
+        .ClothingUploadMenu {
+          @include flexCenter;
+          flex-direction: column;
+          gap: 1rem;
+
+          .uploadButton {
+            @include flexCenter;
+            flex-direction: column;
+            width: 85%;
+            padding: 1rem;
+            @include menuStyle;
+            border: 1px solid transparent;
+          }
+
+          input {
+            display: none
+          }
+        }
+
+        .LightingMenu{
+          @include flexCenter;
+          flex-direction: column;
+          gap: 1rem;
+          width: 100%;
+
+          & > div{
+            @include flexCenter;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+          }
+
+          .LightingOption{
+            @include flexCenter;
+            @include menuStyle;
+            width: 85%;
+            padding: 1rem;
+            border: 1px solid transparent;
+
+            p{
+              color: $text;
+              font-weight: 400;
+              user-select: none;
+            }
+          }
+          .LightingOption-Selected{
+            border: 1px solid $primary;
+            p{color: $primary !important;}
+          }
+        }
+      }
+
+      .OptionPage-humanoid{
+        @include pageLayout;
+        flex-direction: column;
+        gap: 1rem;
+        width: 100%;
+        height: max-content;
+        
+        .HumanoidsMenu{
+          @include flexCenter;
+          flex-direction: column;
+          height: max-content;
+
+          .container{
+            width: 100%;
+            padding: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: .7rem;
+          }
+
+          .Humanoids-Option {
+            @include flexCenter;
+            @include menuStyle;
+            padding: 1rem;
+            gap: 1rem;
+            flex-direction: column;
+            border: 1px solid transparent;
+            img{width: 100%;}
+          }
+          .Selected-Humanoid{
+            border: 1px solid $primary;
+            transition: border .15s;
+            p{
+              color: $primary;
+              transition: color .15s
+            }
+          }
+        }
+
+        .HumanoidsScale{
+          @include flexCenter;
+          flex-direction: column;
+          gap: 1rem;
+          width: 100%;
+
+          .HumanoidScale-Option{
+            @include menuStyle;
+            display: flex;
+            justify-content: space-between;
+            width: 85%;
+            padding: 1rem;
+            cursor: auto;
+
+            &:hover{background-color: lighten($color: $background, $amount: 8);}
+
+            h4{
+              font-size: .9rem;
+              max-width: 20%;
+              text-align: center;
+            }
+
+            & > div{
+              @include flexCenter;
+              justify-content: space-around;
+              gap: .3rem;
+              width: 65%;
+
+              input{
+                width: 100%;
+              }
+
+              p{
+                width: 2rem;
+                text-align: center;
+              }
+            }
+          }
+        }
+
+        .HumanoidMisc{
+          .HumanoidMisc-Option{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: lighten($color: $background, $amount: 8);
+            border-radius: 1rem;
+          }
+          padding-bottom: 1rem;
+        }
+      }
+
+      .OptionPage-Robux{
+        @include pageLayout();
+        
+        .ConvertedValues{
+          @include menuStyle;
+          gap: 1.3rem;
+          cursor: auto;
+          width: 85%;
+          padding: 1.3rem 1rem 1.3rem 1rem;
+
+          &:hover{
+            background-color: lighten($color: $background, $amount: 8);
+          }
+          
+
+          & > div{
+            padding: 0;
+            width: 95%;
+            display: flex;
+            justify-content: space-between;
+
+            h4{
+              font-size: 1.2rem;
+              word-wrap: break-word;
+              max-width: 50%;
+            }
+          }
+        }
+
+        p{
+          text-align: center;
+          font-size: .9rem;
+          font-weight: 400;
+          color: darken($color: $text, $amount: 30);
+        }
+      }
+    }
+  }
+}
+
+#section75 {
+  position: relative;
+  @include flexCenter;
+  height: 100%;
+  width: 77%;
+  overflow: hidden;
+  z-index: 0;
+  position: relative;
+  flex-direction: column;
+  background-color: black;
+  // border-radius: 1rem 0 0 1rem;
+  box-shadow: inset 0 0 3rem 1rem lighten($color: desaturate(rgba(255, 0, 0, 0.3), 30), $amount: 5);
+  text-align: center;
+  font-weight: 200;
+  user-select: none;
+
+  p,
+  h2 {
+    font-weight: 300;
+    max-width: 85%;
+  }
+  h2{
+    font-weight: 900;
+    margin-top: 1.5rem;
+  }
+  
+  .appleWarning{
+    margin-top: 2rem;
+    color: darken($color: $text, $amount: 10);
+    font-weight: 200;
+  }
+
+  canvas {
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    opacity: 0;
+    transition: opacity .7s;
+    cursor: grab;
+    // border-radius: 1rem 0 0 1rem;
+    background-color: lighten($color: $background, $amount: 2);
+  }
+
+  #LoadingLogo {
+    margin-bottom: 2rem;
+    animation: fadeInOut 2s linear 1s infinite alternate;
+  }
+
+  .PreviewMode-2D{
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    @include flexCenter;
+    flex-direction: column;
+    transition: opacity .3s;
+    gap: 1.5rem;
+
+    pointer-events: none;
+    opacity: 0;
+
+    background-color: lighten($color: $background, $amount: 2);
+    // border-radius: 1rem 0 0 1rem;
+
+    img{
+      width: 60%;
+      border-radius: 1rem;
+    }
+    #download2D{
+      // width: 60%;
+      height: 5rem;
+      padding: 0 5rem 0 5rem;
+      @include flexCenter;
+      @include menuStyle;
+      color: $text;
+      font-size: 2rem;
+    }
+    p{
+      position: absolute;
+      margin-top: 95vh;
+      font-weight: 200;
+      color: darken($color: $text, $amount: 30);
+      background-color: lighten($color: $background, $amount: 2);
+      padding: .3rem;
+    }
+  }
+
+  .OverlayMenu {
+    z-index: 4;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    border-radius: inherit;
+    box-sizing: border-box;
+    pointer-events: none;
+
+    .bottomLeft{
+      width: 100%;
+      height: 100%;
+      z-index: 4;
+      display: flex;
+      align-items: flex-end;
+      gap: .7rem;
+
+      .PreviewModeToggle{
+        pointer-events: all;
+
+        width: 6rem;
+        height: 2.5rem;
+        display: flex;
+        
+        margin: 1rem;
+        margin-right: 0;
+        @include menuStyle;
+        border-radius: .3rem;
+        overflow: hidden;
+
+        .PreviewModeToggle-Option{
+          @include flexCenter;
+          width: 100%;
+          height: 100%;
+
+          color: $text;
+          font-weight: 300;
+        }
+      }
+
+      .ResetButton{
+        @include menuStyle;
+        @include flexCenter;
+        pointer-events: all;
+        width: 2.5rem;
+        height: 2.5rem;
+        margin-bottom: 1rem;
+        border-radius: .3rem;
+
+        img{
+          width: 65%;
+        }
+      }
+        
+    }
+
+    #clothingLoading{
+      top: 1rem;
+      bottom: auto;
+      position: absolute;
+      margin: .5rem;
+      @include flexCenter;
+      color: red;
+    }
+    
+  }
+}
+
+// Mobile 📱
+@media only screen and (max-width: 768px) {
+
+  #section-Popup{
+    .Popup-UpdateLog{
+      padding: 1rem 1.3rem;
+      font-size: 1.2em;
+    }
+  }
+
+  #section25 {
+    z-index: 1;
+    min-width: 0%;
+    max-width: 100%;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    flex-direction: column-reverse;
+    background-color: transparent;
+    border-radius: 0;
+    pointer-events: none;
+
+    .NavBar{
+      pointer-events: all;
+      width: 100%;
+      height: 7%;
+      flex-direction: row;
+      justify-content: space-evenly;
+      align-items: center;
+      gap: .3rem;
+      padding: 1rem .3rem 1rem .3rem;
+
+      .NavButton {
+        @include flexCenter;
+        justify-content: space-evenly !important;
+        flex-direction: column;
+        max-width: 3rem;
+        max-height: 3rem;
+        padding: .7rem;
+        border-radius: 20%;
+        p{font-size: .75rem;}
+  
+        &:not(.NavButton-Selected):hover {
+          background-color: lighten($background, 15);
+  
+          img,
+          p {
+            filter: brightness(125%);
+          }
+        }
+  
+  
+        img {
+          height: 60%;
+          width: 60%;
+        }
+      }
+      #NavButton-home{
+        width: 3rem !important;
+        height: 3rem !important;
+        padding: 0 !important;
+
+        img{
+          width: 100%;
+          height: 100%;
+        }
+      }
+
+      #NavButton-Preview{
+        display: flex;
+      }
+
+      hr{
+        height: 80%;
+        width: 0;
+        margin: 0;
+        border: 0;
+        border-left: 1px solid rgba(128, 128, 128, 0.3);
+      }
+    }
+
+    .OptionMenu{
+      width: 100%;
+      height: 100%;
+      pointer-events: all;
+      
+      & > div > div > div:last-child{
+        padding-bottom: .9rem;
+      }
+
+      .OptionPage-Robux{
+        h4{
+          font-size: 1rem !important;
+        }
+      }
+    }
+
+  }
+  
+  #section75 {
+    width: 100%;
+    height: 93%;
+    border-radius: 0;
+    box-shadow: inset 0 0 2rem .3rem lighten($color: desaturate(rgba(255, 0, 0, 0.3), 30), $amount: 5);
+  
+    .PreviewMode-2D{  
+      width: 100%;
+      border-radius: 0;
+      img{
+        width: 95%;
+      }
+      #download2D{
+        width: 85%;
+        height: fit-content;
+        padding: 1rem;
+        @include flexCenter;
+        @include menuStyle;
+        color: $text;
+        font-size: 1.5rem;
+        font-weight: 200;
+      }
+      p{
+        position: absolute;
+        margin-top: -85dvh;
+        font-size: .8rem;
+        font-weight: 200;
+      }
+    }
+  
+    .OverlayMenu {
+      z-index: 4;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: calc(93% - 1.5rem);
+      position: fixed;
+      border-radius: inherit;
+      box-sizing: border-box;
+      pointer-events: none;
+  
+      .bottomLeft {
+        align-items: flex-end;
+        justify-content: right;
+        position: absolute;
+
+        .ResetButton {
+          margin: 0 .5rem 1rem 0;
+        }
+      }
+      #clothingLoading{
+        top: auto;
+        bottom: 1rem;
+      }
+    }
+  }
+}
+
+#Page-404 {
+  @include flexCenter;
+  background-color: darken($color: $background, $amount: 3);
+  #Page-404-Content {
+    @include flexCenter;
+    flex-direction: column;
+    gap: 1rem;
+
+    min-width: 70%;
+    max-width: 90%;
+    min-height: 70%;
+
+    background-color: $background;
+    text-align: center;
+    border-radius: 1rem;
+
+    img {
+      width: 20rem;
+    }
+
+    button {
+      width: fit-content;
+
+      a {
+        color: $background !important;
+      }
+    }
+  }
+}
+
+// Update specific CSS
+
+#PatreonSection{
+  display: flex;
+  flex-direction: row !important;
+  gap: 3rem !important;
+  width: 100%;
+  align-items: center !important;
+  #PatreonBanner{border-radius: 1rem; max-width: 100%;}
+  
+  div{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    max-width: 40%;
+    
+    text-align: center;
+  }
+  @media only screen and (max-width: 768px) {
+    flex-direction: column-reverse !important;
+    align-items: center !important;
+
+    div{
+    max-width: 100%};
+  }
+}

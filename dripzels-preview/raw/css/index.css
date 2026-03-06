@@ -1,0 +1,216 @@
+:root {
+  --backgroundGlass: rgba(15, 15, 15, .7);
+  --background: rgba(12, 12, 12, 1);
+  --border: 1px solid rgba(125, 125, 125, 0.3);
+  --blur: blur(15px);
+  
+  /* Lighter shade for background */
+  --backgroundLight1: rgba(20, 20, 20, 1);
+  --backgroundLight2: rgba(40, 40, 40, 1);
+
+  /* Darker shade for background */
+  --backgroundDark: rgba(10, 10, 10, 1);
+
+  /* Lighter shade for border */
+  --borderLight: 1px solid rgba(125, 125, 125, 0.4);
+
+  /* Darker shade for border */
+  --borderDark: 1px solid rgba(125, 125, 125, 0.15);
+}
+
+h1, h2, h3, h4, h5, h6, p{
+  margin: 0;
+}
+
+.NewMenus{
+  z-index: 5;
+  min-width: 100vw;
+  min-height: 100vh;
+  position: fixed;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.SideMenu-Left{
+  position: relative;
+  transform: translateX(-97%);
+
+  transition: transform .3s;
+  padding: .7rem;
+  background-color: var(--backgroundGlass);
+  border-radius: 0 1em 1em 0;
+  border: var(--border);
+  border-left: none;
+  backdrop-filter: var(--blur);
+  pointer-events: all;
+  color: lightgray;
+  margin-top: -10rem;
+}
+
+#SideMenu-Left-Button{
+  width: 2.5rem;
+  height: 2.5rem;
+  position: absolute;
+  left: calc(100% + .2rem);
+
+  border: var(--border);
+  background-color: var(--background);
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+
+  padding: .3rem;
+  border-radius: .3rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#SideMenu-Left-Button h3 {
+  transition: transform .3s, color .3s;
+}
+.SideMenu-Left-BodyTypes{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1em;
+}
+
+.SideMenu-Left-BodyTypes-Type{
+  width: fit-content;
+  user-select: none;
+  cursor: pointer;
+  border-radius: 1rem;
+  padding: .5rem;
+  
+  /* Color - Dark*/
+  border: var(--borderDark);
+  background-color: var(--backgroundDark);
+
+  /* Misc */
+  transition: filter .3s, -webkit-filter .3s, background-color .3s, border .3s;
+}
+.SideMenu-Left-BodyTypes-Type img{
+  filter: brightness(40%);
+  -webkit-filter: brightness(40%);
+  width: 5rem;
+  transition: .3s;
+}
+.Active_BodyType{
+  background-color: var(--backgroundLight1);
+  border: var(--borderLight);
+  filter: brightness(95%);
+  -wbekit-filter: brightness(95%);
+}
+.Active_BodyType img, .Active_BodyType:hover{
+  filter: brightness(95%) !important;
+  -webkit-filter: brightness(95%) !important;
+}
+.SideMenu-Left-BodyTypes-Type:hover{
+  filter: brightness(80%);
+  -webkit-filter: brightness(80%);
+}
+.SideMenu-Left-BodyTypes-Type img{
+  max-width: 6rem;
+}
+
+/* Body type Tooltip */
+.SideMenu-Left-BodyTypes-Type .tooltipText {
+  top: 50%;
+  left: 90%;
+  transform: translateY(-50%);
+  transition: .3s;
+}
+.SideMenu-Left-BodyTypes .tooltipItem:hover .tooltipText{
+  opacity: 1;
+  visibility: visible;
+  left: 105%;
+}
+
+
+.SideMenu-Right{
+  z-index: 5;
+  width: 15rem;
+  max-width: 50%;
+  transform: translateX(97%);
+  margin-top: -10rem;
+  
+  transition: transform .3s;
+  padding: .7rem;
+  background-color: var(--backgroundGlass);
+  border-radius: 1em 0 0 1em;
+  border: var(--border);
+  border-right: none;
+  backdrop-filter: var(--blur);
+  pointer-events: all;
+  color: lightgray;
+}
+#SideMenu-Right-Button{
+  width: 2.5rem;
+  height: 2.5rem;
+  position: absolute;
+  right: calc(100% + .1rem);
+
+  border: var(--border);
+  background-color: var(--background);
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+
+  padding: .3rem;
+  border-radius: .3rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#SideMenu-Right-Button h3 {
+  transition: transform .3s, color .3s;
+}
+
+.SideMenu-Right-Scaling input{
+  -webkit-appearance: none;
+  background: var(--backgroundLight1);
+  border: var(--border);
+  width: 85%;
+  height: 1rem;
+  border-radius: 1rem;
+  box-sizing: border-box;
+}
+.slider::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  width: 1rem;
+  height: 1rem;
+  
+  background: var(--backgroundLight2);
+  border: var(--borderLight);
+  border-radius: 50%;
+  cursor: ew-resize;
+  filter: brightness(100%);
+  transition: filter .3s;
+}
+.slider::-webkit-slider-thumb:hover{filter: brightness(150%);}
+
+.slider::-moz-range-thumb{
+  width: 1rem;
+  height: 1rem;
+
+  background: var(--backgroundLight2);
+  border: var(--borderLight);
+  border-radius: 50%;
+  cursor: ew-resize;
+}
+@media only screen and (min-width: 1024px) {
+  .SideMenu-Left{
+    transform: translateX(0);
+  }
+  .SideMenu-Left{margin-top: 0;}
+  #SideMenu-Left-Button{display: none;}
+
+  .SideMenu-Right{
+    transform: translateX(0);
+  }
+  .SideMenu-Right{margin-top: 0;}
+  #SideMenu-Right-Button{display: none;}
+}

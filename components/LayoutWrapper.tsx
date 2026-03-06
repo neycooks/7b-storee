@@ -8,11 +8,10 @@ import Intro from '@/components/Intro';
 function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
-      {/* Desktop Sidebar - always visible */}
-      <div className="hidden lg:block fixed left-0 top-0 w-[280px] h-screen p-6 pb-0">
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:block fixed left-0 top-0 w-[280px] h-screen p-6">
         <Sidebar />
       </div>
-      <div className="hidden lg:block fixed left-0 top-0 w-[280px] h-screen"></div>
       
       {/* Main Content */}
       <div className="flex-1 w-full lg:ml-[280px]">
