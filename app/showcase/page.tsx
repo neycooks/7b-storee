@@ -317,7 +317,7 @@ export default function ShowcasePage() {
           
           setPreview2D(canvas.toDataURL('image/png'));
         };
-      } else if (pantsImage && isPants) {
+      } else if (pantsImage) {
         const pantsImg = document.createElement('img');
         pantsImg.crossOrigin = 'anonymous';
         pantsImg.src = pantsImage;
@@ -415,10 +415,6 @@ export default function ShowcasePage() {
       };
     }
   }, [shirtImage, pantsImage]);
-
-  const isPants = (imageSrc: string) => {
-    return false;
-  };
 
   useEffect(() => {
     if (!loading) {
