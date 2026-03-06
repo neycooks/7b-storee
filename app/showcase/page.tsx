@@ -29,6 +29,7 @@ export default function ShowcasePage() {
   const headMeshRef = useRef<any>(null);
   const materialsRef = useRef<{ torso: any; legs: any; hands: any; head: any }>({ torso: null, legs: null, hands: null, head: null });
   const loadedRef = useRef(false);
+  const animationRef = useRef<number>(0);
 
   const initScene = useCallback(async () => {
     if (typeof window === 'undefined' || !containerRef.current || !canvasRef.current || loadedRef.current) return;
@@ -100,7 +101,7 @@ export default function ShowcasePage() {
       basePantsTexture.colorSpace = THREE.SRGBColorSpace;
 
       const randomFaceNum = Math.floor(Math.random() * 13) + 1;
-      const faceTexture = textureLoader.load(`/dripzels/models/textures/facesTransparent/${randomFaceNum}.png`);
+      const faceTexture = textureLoader.load(`/dripzels/models/textures/faces/${randomFaceNum}.webp`);
       faceTexture.flipY = false;
       faceTexture.colorSpace = THREE.SRGBColorSpace;
 
@@ -156,7 +157,7 @@ export default function ShowcasePage() {
       setLoadingProgress(100);
 
       const animate = () => {
-        requestAnimationFrame(animate);
+        animationRef.current = requestAnimationFrame(animate);
         controls.update();
         renderer.render(scene, camera);
       };
@@ -179,6 +180,9 @@ export default function ShowcasePage() {
   useEffect(() => {
     initScene();
     return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
       if (rendererRef.current) {
         rendererRef.current.dispose();
       }
@@ -186,7 +190,7 @@ export default function ShowcasePage() {
   }, [initScene]);
 
   useEffect(() => {
-    if (!sceneRef.current || !materialsRef.current.torso) return;
+    if (!sceneRef.current) return;
 
     const updateLighting = async () => {
       const THREE = await import('three');
@@ -277,68 +281,50 @@ export default function ShowcasePage() {
     baseImg.onload = () => {
       ctx.drawImage(baseImg, 0, 0);
 
-      const drawClothing = (clothingSrc: string, type: 'shirt' | 'pants') => {
+      const applyClothingToCanvas = (clothingSrc: string) => {
         const clothingImg = document.createElement('img');
         clothingImg.crossOrigin = 'anonymous';
         clothingImg.src = clothingSrc;
+        
         clothingImg.onload = () => {
-          if (type === 'shirt') {
-            ctx.drawImage(clothingImg, 168, 69, 128, 128, 231, 74, 128, 128);
-            ctx.drawImage(clothingImg, 104, 69, 64, 128, 217, 355, 64, 128);
-            ctx.drawImage(clothingImg, 296, 69, 64, 128, 308, 355, 64, 128);
-            ctx.drawImage(clothingImg, 453, 69, 128, 128, 427, 74, 128, 128);
-            ctx.drawImage(clothingImg, 581, 69, 64, 128, 85, 355, 64, 128);
-            ctx.drawImage(clothingImg, 389, 69, 64, 128, 440, 355, 64, 128);
-            ctx.drawImage(clothingImg, 25, 69, 64, 128, 151, 355, 64, 128);
-            ctx.drawImage(clothingImg, 660, 69, 64, 128, 374, 355, 64, 128);
-          } else {
-            ctx.drawImage(clothingImg, 168, 197, 128, 128, 231, 74, 128, 128);
-            ctx.drawImage(clothingImg, 104 + 64, 197, 64, 128, 217, 355, 64, 128);
-            ctx.drawImage(clothingImg, 296 - 64, 197, 64, 128, 308, 355, 64, 128);
-            ctx.drawImage(clothingImg, 453, 69, 128, 128, 427, 74, 128, 128);
-            ctx.drawImage(clothingImg, 581 - 64, 197, 64, 128, 85, 355, 64, 128);
-            ctx.drawImage(clothingImg, 389 + 64, 197, 64, 128, 440, 355, 64, 128);
-            ctx.drawImage(clothingImg, 25, 197, 64, 128, 151, 355, 64, 128);
-            ctx.drawImage(clothingImg, 660 - 64, 197, 64, 128, 374, 355, 64, 128);
-          }
+          ctx.drawImage(clothingImg, 0, 0);
           setPreview2D(canvas.toDataURL('image/png'));
         };
       };
 
-      if (shirtImage) {
-        drawClothing(shirtImage, 'shirt');
-      }
-      if (pantsImage) {
-        if (shirtImage) {
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = 585;
-          tempCanvas.height = 559;
-          const tempCtx = tempCanvas.getContext('2d');
-          if (tempCtx) {
-            tempCtx.drawImage(canvas, 0, 0);
-            const clothingImg = document.createElement('img');
-            clothingImg.crossOrigin = 'anonymous';
-            clothingImg.src = pantsImage;
-            clothingImg.onload = () => {
-              tempCtx.drawImage(clothingImg, 168, 197, 128, 128, 231, 74, 128, 128);
-              tempCtx.drawImage(clothingImg, 104 + 64, 197, 64, 128, 217, 355, 64, 128);
-              tempCtx.drawImage(clothingImg, 296 - 64, 197, 64, 128, 308, 355, 64, 128);
-              tempCtx.drawImage(clothingImg, 453, 69, 128, 128, 427, 74, 128, 128);
-              tempCtx.drawImage(clothingImg, 581 - 64, 197, 64, 128, 85, 355, 64, 128);
-              tempCtx.drawImage(clothingImg, 389 + 64, 197, 64, 128, 440, 355, 64, 128);
-              tempCtx.drawImage(clothingImg, 25, 197, 64, 128, 151, 355, 64, 128);
-              tempCtx.drawImage(clothingImg, 660 - 64, 197, 64, 128, 374, 355, 64, 128);
-              setPreview2D(tempCanvas.toDataURL('image/png'));
-            };
-          }
-        } else {
-          drawClothing(pantsImage, 'pants');
-        }
-      }
+      if (shirtImage && pantsImage) {
+        const shirtImg = document.createElement('img');
+        shirtImg.crossOrigin = 'anonymous';
+        shirtImg.src = shirtImage;
+        
+        const pantsImg = document.createElement('img');
+        pantsImg.crossOrigin = 'anonymous';
+        pantsImg.src = pantsImage;
 
-      if (!shirtImage && !pantsImage) {
+        let loaded = 0;
+        const checkDone = () => {
+          loaded++;
+          if (loaded === 2) {
+            ctx.drawImage(baseImg, 0, 0);
+            ctx.drawImage(shirtImg, 0, 0);
+            ctx.drawImage(pantsImg, 0, 0);
+            setPreview2D(canvas.toDataURL('image/png'));
+          }
+        };
+
+        shirtImg.onload = checkDone;
+        pantsImg.onload = checkDone;
+      } else if (shirtImage) {
+        applyClothingToCanvas(shirtImage);
+      } else if (pantsImage) {
+        applyClothingToCanvas(pantsImage);
+      } else {
         setPreview2D(canvas.toDataURL('image/png'));
       }
+    };
+
+    baseImg.onerror = () => {
+      setPreview2D('/dripzels/images/2DPreview.png');
     };
 
     if (!shirtImage && !pantsImage) {
@@ -399,97 +385,102 @@ export default function ShowcasePage() {
     link.click();
   };
 
+  const handlePreviewModeChange = (mode: '3d' | '2d') => {
+    setPreviewMode(mode);
+    if (mode === '2d') {
+      generate2DPreview();
+    }
+  };
+
   return (
     <div className="animate-fade-in">
-      <h1 className="text-white font-bold text-3xl mb-6">Clothing Showcase</h1>
+      <h1 className="text-white font-bold text-2xl mb-4 md:text-3xl md:mb-6">Clothing Showcase</h1>
 
       {error && (
-        <div className="bg-red-500/20 border border-red-500 rounded-xl p-4 mb-6">
+        <div className="bg-red-500/20 border border-red-500 rounded-xl p-4 mb-4 md:mb-6">
           <p className="text-red-400 text-sm">{error}</p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2">
-          <div className="bg-card-bg rounded-xl p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-white font-bold text-lg">Preview</h2>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setPreviewMode('3d')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition ${
-                    previewMode === '3d' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'
-                  }`}
-                >
-                  <Box size={16} /> 3D
-                </button>
-                <button
-                  onClick={() => { setPreviewMode('2d'); generate2DPreview(); }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition ${
-                    previewMode === '2d' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'
-                  }`}
-                >
-                  <Image size={16} /> 2D
-                </button>
+      <div className="flex flex-col gap-4 md:gap-6">
+        <div className="bg-card-bg rounded-xl p-3 md:p-4">
+          <div className="flex justify-between items-center mb-3 md:mb-4">
+            <h2 className="text-white font-bold text-lg">Preview</h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handlePreviewModeChange('3d')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition ${
+                  previewMode === '3d' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'
+                }`}
+              >
+                <Box size={16} /> 3D
+              </button>
+              <button
+                onClick={() => handlePreviewModeChange('2d')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition ${
+                  previewMode === '2d' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'
+                }`}
+              >
+                <Image size={16} /> 2D
+              </button>
+            </div>
+          </div>
+
+          <div 
+            ref={containerRef} 
+            className="relative bg-[#0d0d0d] rounded-lg overflow-hidden"
+            style={{ height: previewMode === '3d' ? '50vh md:600px' : 'auto', minHeight: '300px' }}
+          >
+            {loading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0d0d0d] z-10">
+                <Loader2 className="animate-spin text-primary mb-4" size={48} />
+                <p className="text-white font-medium">Loading... {loadingProgress}%</p>
+              </div>
+            )}
+
+            {previewMode === '3d' ? (
+              <canvas ref={canvasRef} className="w-full h-full" />
+            ) : (
+              <img src={preview2D} alt="2D Preview" className="w-full h-auto object-contain" />
+            )}
+          </div>
+
+          <div className="mt-3 md:mt-4 space-y-3 md:space-y-4">
+            <div>
+              <label className="text-text-muted text-sm block mb-2">Model</label>
+              <div className="flex gap-2 flex-wrap">
+                {(['blocky', 'man', 'woman', 'curvy'] as ModelType[]).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setModelType(m)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      modelType === m ? 'bg-primary text-black' : 'bg-app-bg text-white hover:bg-border'
+                    }`}
+                  >
+                    {m.charAt(0).toUpperCase() + m.slice(1)}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div 
-              ref={containerRef} 
-              className="relative bg-[#0d0d0d] rounded-lg overflow-hidden"
-              style={{ height: '600px' }}
-            >
-              {loading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0d0d0d] z-10">
-                  <Loader2 className="animate-spin text-primary mb-4" size={48} />
-                  <p className="text-white font-medium">Loading 3D Scene... {loadingProgress}%</p>
-                </div>
-              )}
-
-              {previewMode === '3d' ? (
-                <canvas ref={canvasRef} className="w-full h-full" />
-              ) : (
-                <img src={preview2D} alt="2D Preview" className="w-full h-full object-contain" />
-              )}
-            </div>
-
-            <div className="mt-4 space-y-4">
-              <div>
-                <label className="text-text-muted text-sm block mb-2">Model</label>
-                <div className="flex gap-2 flex-wrap">
-                  {(['blocky', 'man', 'woman', 'curvy'] as ModelType[]).map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setModelType(m)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                        modelType === m ? 'bg-primary text-black' : 'bg-app-bg text-white hover:bg-border'
-                      }`}
-                    >
-                      {m.charAt(0).toUpperCase() + m.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-text-muted text-sm block mb-2">Lighting</label>
-                <div className="flex gap-2 flex-wrap">
-                  {([
-                    { id: 'none', label: 'None' },
-                    { id: 'studio', label: 'Studio' },
-                    { id: 'sunset', label: 'Sunset' }
-                  ] as { id: LightingPreset; label: string }[]).map((l) => (
-                    <button
-                      key={l.id}
-                      onClick={() => setLighting(l.id)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                        lighting === l.id ? 'bg-primary text-black' : 'bg-app-bg text-white hover:bg-border'
-                      }`}
-                    >
-                      {l.label}
-                    </button>
-                  ))}
-                </div>
+            <div>
+              <label className="text-text-muted text-sm block mb-2">Lighting</label>
+              <div className="flex gap-2 flex-wrap">
+                {([
+                  { id: 'none', label: 'None' },
+                  { id: 'studio', label: 'Studio' },
+                  { id: 'sunset', label: 'Sunset' }
+                ] as { id: LightingPreset; label: string }[]).map((l) => (
+                  <button
+                    key={l.id}
+                    onClick={() => setLighting(l.id)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      lighting === l.id ? 'bg-primary text-black' : 'bg-app-bg text-white hover:bg-border'
+                    }`}
+                  >
+                    {l.label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
