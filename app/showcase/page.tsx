@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Loader2, RotateCcw, Download, Image, Box } from 'lucide-react';
 
-type ModelType = 'blocky' | 'man' | 'woman' | 'curvy';
 type LightingPreset = 'none' | 'studio' | 'sunset';
 
 export default function ShowcasePage() {
@@ -13,7 +12,6 @@ export default function ShowcasePage() {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [shirtImage, setShirtImage] = useState<string | null>(null);
   const [pantsImage, setPantsImage] = useState<string | null>(null);
-  const [modelType, setModelType] = useState<ModelType>('blocky');
   const [lighting, setLighting] = useState<LightingPreset>('studio');
   const [previewMode, setPreviewMode] = useState<'3d' | '2d'>('3d');
   const [preview2D, setPreview2D] = useState<string>('/dripzels/images/2DPreview.png');
@@ -30,6 +28,7 @@ export default function ShowcasePage() {
   const materialsRef = useRef<{ torso: any; legs: any; hands: any; head: any }>({ torso: null, legs: null, hands: null, head: null });
   const loadedRef = useRef(false);
   const animationRef = useRef<number>(0);
+  const sceneInitializedRef = useRef(false);
 
   const initScene = useCallback(async () => {
     if (typeof window === 'undefined' || !containerRef.current || !canvasRef.current || loadedRef.current) return;
@@ -156,6 +155,8 @@ export default function ShowcasePage() {
       try { await loadModel('/dripzels/models/Blocky_Legs.glb', 'legs', basePantsTexture); } catch (e) { console.warn('Legs failed'); }
       setLoadingProgress(100);
 
+      sceneInitializedRef.current = true;
+
       const animate = () => {
         animationRef.current = requestAnimationFrame(animate);
         controls.update();
@@ -164,9 +165,10 @@ export default function ShowcasePage() {
       animate();
 
       window.addEventListener('resize', () => {
-        camera.aspect = container.clientWidth / container.clientHeight;
+        if (!containerRef.current) return;
+        camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
         camera.updateProjectionMatrix();
-        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
       });
 
       setLoading(false);
@@ -190,7 +192,7 @@ export default function ShowcasePage() {
   }, [initScene]);
 
   useEffect(() => {
-    if (!sceneRef.current) return;
+    if (!sceneInitializedRef.current || !sceneRef.current) return;
 
     const updateLighting = async () => {
       const THREE = await import('three');
@@ -269,68 +271,154 @@ export default function ShowcasePage() {
 
   const generate2DPreview = useCallback(() => {
     const canvas = document.createElement('canvas');
-    canvas.width = 585;
-    canvas.height = 559;
+    const canvasWidth = 500;
+    const canvasHeight = 500;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const baseImg = document.createElement('img');
-    baseImg.crossOrigin = 'anonymous';
-    baseImg.src = '/dripzels/images/2DPreview.png';
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-    baseImg.onload = () => {
-      ctx.drawImage(baseImg, 0, 0);
+    const templateWidth = 585;
+    const templateHeight = 559;
+    const scaleX = templateWidth / 585;
+    const scaleY = templateHeight / 559;
 
-      const applyClothingToCanvas = (clothingSrc: string) => {
-        const clothingImg = document.createElement('img');
-        clothingImg.crossOrigin = 'anonymous';
-        clothingImg.src = clothingSrc;
-        
-        clothingImg.onload = () => {
-          ctx.drawImage(clothingImg, 0, 0);
-          setPreview2D(canvas.toDataURL('image/png'));
-        };
+    const drawClothingImage = (clothingSrc: string, isPants: boolean, destX: number, destY: number, destW: number, destH: number, srcX: number, srcY: number, srcW: number, srcH: number) => {
+      const img = document.createElement('img');
+      img.crossOrigin = 'anonymous';
+      img.src = clothingSrc;
+      img.onload = () => {
+        ctx.drawImage(img, srcX * scaleX, srcY * scaleY, srcW * scaleX, srcH * scaleY, destX, destY, destW, destH);
       };
+    };
 
-      if (shirtImage && pantsImage) {
+    const loadAndDraw = () => {
+      if (shirtImage && !isPants) {
+        ctx.drawImage(document.createElement('img'), 0, 0);
+        
         const shirtImg = document.createElement('img');
         shirtImg.crossOrigin = 'anonymous';
         shirtImg.src = shirtImage;
-        
+        shirtImg.onload = () => {
+          const centerX = canvasWidth / 2;
+          const torsoW = 180;
+          const torsoH = 200;
+          const torsoX = centerX - torsoW / 2;
+          const torsoY = 80;
+          ctx.drawImage(shirtImg, 231 * scaleX, 74 * scaleY, 128 * scaleX, 128 * scaleY, torsoX, torsoY, torsoW, torsoH);
+          
+          const armW = 70;
+          const armH = 180;
+          ctx.drawImage(shirtImg, 85 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, torsoX - armW - 15, torsoY + 20, armW, armH);
+          ctx.drawImage(shirtImg, 440 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, torsoX + torsoW + 15, torsoY + 20, armW, armH);
+          
+          setPreview2D(canvas.toDataURL('image/png'));
+        };
+      } else if (pantsImage && isPants) {
         const pantsImg = document.createElement('img');
         pantsImg.crossOrigin = 'anonymous';
         pantsImg.src = pantsImage;
-
-        let loaded = 0;
-        const checkDone = () => {
-          loaded++;
-          if (loaded === 2) {
-            ctx.drawImage(baseImg, 0, 0);
-            ctx.drawImage(shirtImg, 0, 0);
-            ctx.drawImage(pantsImg, 0, 0);
-            setPreview2D(canvas.toDataURL('image/png'));
-          }
+        pantsImg.onload = () => {
+          const centerX = canvasWidth / 2;
+          const waistW = 160;
+          const waistH = 60;
+          const waistX = centerX - waistW / 2;
+          const waistY = 60;
+          ctx.drawImage(pantsImg, 231 * scaleX, 74 * scaleY, 128 * scaleX, 64 * scaleY, waistX, waistY, waistW, waistH);
+          
+          const legW = 70;
+          const legH = 220;
+          ctx.drawImage(pantsImg, 85 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, waistX, waistY + waistH + 10, legW, legH);
+          ctx.drawImage(pantsImg, 440 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, waistX + waistW - legW, waistY + waistH + 10, legW, legH);
+          
+          setPreview2D(canvas.toDataURL('image/png'));
         };
-
-        shirtImg.onload = checkDone;
-        pantsImg.onload = checkDone;
-      } else if (shirtImage) {
-        applyClothingToCanvas(shirtImage);
-      } else if (pantsImage) {
-        applyClothingToCanvas(pantsImage);
       } else {
         setPreview2D(canvas.toDataURL('image/png'));
       }
     };
 
-    baseImg.onerror = () => {
-      setPreview2D('/dripzels/images/2DPreview.png');
-    };
-
-    if (!shirtImage && !pantsImage) {
-      setPreview2D('/dripzels/images/2DPreview.png');
+    if (shirtImage && pantsImage) {
+      const shirtImg = document.createElement('img');
+      shirtImg.crossOrigin = 'anonymous';
+      shirtImg.src = shirtImage;
+      
+      const pantsImg = document.createElement('img');
+      pantsImg.crossOrigin = 'anonymous';
+      pantsImg.src = pantsImage;
+      
+      let loaded = 0;
+      const checkDone = () => {
+        loaded++;
+        if (loaded === 2) {
+          const centerX = canvasWidth / 2;
+          
+          const torsoW = 150;
+          const torsoH = 160;
+          const torsoX = centerX - torsoW / 2;
+          const torsoY = 30;
+          ctx.drawImage(shirtImg, 231 * scaleX, 74 * scaleY, 128 * scaleX, 128 * scaleY, torsoX, torsoY, torsoW, torsoH);
+          
+          const armW = 55;
+          const armH = 150;
+          ctx.drawImage(shirtImg, 85 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, torsoX - armW - 10, torsoY + 15, armW, armH);
+          ctx.drawImage(shirtImg, 440 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, torsoX + torsoW + 10, torsoY + 15, armW, armH);
+          
+          const waistW = 140;
+          const waistH = 50;
+          const waistX = centerX - waistW / 2;
+          const waistY = torsoY + torsoH + 10;
+          ctx.drawImage(pantsImg, 231 * scaleX, 74 * scaleY, 128 * scaleX, 64 * scaleY, waistX, waistY, waistW, waistH);
+          
+          const legW = 60;
+          const legH = 180;
+          ctx.drawImage(pantsImg, 85 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, waistX, waistY + waistH + 5, legW, legH);
+          ctx.drawImage(pantsImg, 440 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, waistX + waistW - legW, waistY + waistH + 5, legW, legH);
+          
+          setPreview2D(canvas.toDataURL('image/png'));
+        }
+      };
+      
+      shirtImg.onload = checkDone;
+      pantsImg.onload = checkDone;
+    } else if (shirtImage) {
+      loadAndDraw();
+    } else if (pantsImage) {
+      const pantsImg = document.createElement('img');
+      pantsImg.crossOrigin = 'anonymous';
+      pantsImg.src = pantsImage;
+      pantsImg.onload = () => {
+        const centerX = canvasWidth / 2;
+        const waistW = 160;
+        const waistH = 60;
+        const waistX = centerX - waistW / 2;
+        const waistY = 60;
+        ctx.drawImage(pantsImg, 231 * scaleX, 74 * scaleY, 128 * scaleX, 64 * scaleY, waistX, waistY, waistW, waistH);
+        
+        const legW = 70;
+        const legH = 220;
+        ctx.drawImage(pantsImg, 85 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, waistX, waistY + waistH + 10, legW, legH);
+        ctx.drawImage(pantsImg, 440 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, waistX + waistW - legW, waistY + waistH + 10, legW, legH);
+        
+        setPreview2D(canvas.toDataURL('image/png'));
+      };
+    } else {
+      const baseImg = document.createElement('img');
+      baseImg.crossOrigin = 'anonymous';
+      baseImg.src = '/dripzels/images/2DPreview.png';
+      baseImg.onload = () => {
+        ctx.drawImage(baseImg, 0, 0, canvasWidth, canvasHeight);
+        setPreview2D(canvas.toDataURL('image/png'));
+      };
     }
   }, [shirtImage, pantsImage]);
+
+  const isPants = (imageSrc: string) => {
+    return false;
+  };
 
   useEffect(() => {
     if (!loading) {
@@ -385,13 +473,6 @@ export default function ShowcasePage() {
     link.click();
   };
 
-  const handlePreviewModeChange = (mode: '3d' | '2d') => {
-    setPreviewMode(mode);
-    if (mode === '2d') {
-      generate2DPreview();
-    }
-  };
-
   return (
     <div className="animate-fade-in">
       <h1 className="text-white font-bold text-2xl mb-4 md:text-3xl md:mb-6">Clothing Showcase</h1>
@@ -408,7 +489,7 @@ export default function ShowcasePage() {
             <h2 className="text-white font-bold text-lg">Preview</h2>
             <div className="flex gap-2">
               <button
-                onClick={() => handlePreviewModeChange('3d')}
+                onClick={() => { setPreviewMode('3d'); }}
                 className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition ${
                   previewMode === '3d' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'
                 }`}
@@ -416,7 +497,7 @@ export default function ShowcasePage() {
                 <Box size={16} /> 3D
               </button>
               <button
-                onClick={() => handlePreviewModeChange('2d')}
+                onClick={() => { setPreviewMode('2d'); generate2DPreview(); }}
                 className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition ${
                   previewMode === '2d' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'
                 }`}
@@ -427,9 +508,9 @@ export default function ShowcasePage() {
           </div>
 
           <div 
-            ref={containerRef} 
+            ref={containerRef}
             className="relative bg-[#0d0d0d] rounded-lg overflow-hidden"
-            style={{ height: previewMode === '3d' ? '50vh md:600px' : 'auto', minHeight: '300px' }}
+            style={{ height: previewMode === '3d' ? '50vh md:600px' : '500px' }}
           >
             {loading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0d0d0d] z-10">
@@ -441,47 +522,28 @@ export default function ShowcasePage() {
             {previewMode === '3d' ? (
               <canvas ref={canvasRef} className="w-full h-full" />
             ) : (
-              <img src={preview2D} alt="2D Preview" className="w-full h-auto object-contain" />
+              <img src={preview2D} alt="2D Preview" className="w-full h-full object-contain" />
             )}
           </div>
 
-          <div className="mt-3 md:mt-4 space-y-3 md:space-y-4">
-            <div>
-              <label className="text-text-muted text-sm block mb-2">Model</label>
-              <div className="flex gap-2 flex-wrap">
-                {(['blocky', 'man', 'woman', 'curvy'] as ModelType[]).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setModelType(m)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      modelType === m ? 'bg-primary text-black' : 'bg-app-bg text-white hover:bg-border'
-                    }`}
-                  >
-                    {m.charAt(0).toUpperCase() + m.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-text-muted text-sm block mb-2">Lighting</label>
-              <div className="flex gap-2 flex-wrap">
-                {([
-                  { id: 'none', label: 'None' },
-                  { id: 'studio', label: 'Studio' },
-                  { id: 'sunset', label: 'Sunset' }
-                ] as { id: LightingPreset; label: string }[]).map((l) => (
-                  <button
-                    key={l.id}
-                    onClick={() => setLighting(l.id)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      lighting === l.id ? 'bg-primary text-black' : 'bg-app-bg text-white hover:bg-border'
-                    }`}
-                  >
-                    {l.label}
-                  </button>
-                ))}
-              </div>
+          <div className="mt-3 md:mt-4">
+            <label className="text-text-muted text-sm block mb-2">Lighting</label>
+            <div className="flex gap-2 flex-wrap">
+              {([
+                { id: 'none', label: 'None' },
+                { id: 'studio', label: 'Studio' },
+                { id: 'sunset', label: 'Sunset' }
+              ] as { id: LightingPreset; label: string }[]).map((l) => (
+                <button
+                  key={l.id}
+                  onClick={() => setLighting(l.id)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    lighting === l.id ? 'bg-primary text-black' : 'bg-app-bg text-white hover:bg-border'
+                  }`}
+                >
+                  {l.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
