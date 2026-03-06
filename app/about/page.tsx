@@ -63,13 +63,22 @@ interface TeamKit {
   link: string;
 }
 
+interface MenuPost {
+  id: number;
+  category: string;
+  title: string;
+  description: string;
+  image_url: string;
+  created_at: string;
+}
+
 export default function About() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [showLogin, setShowLogin] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
-  const [activeTab, setActiveTab] = useState<'clothing' | 'gamepasses' | 'leagues'>('clothing');
+  const [activeTab, setActiveTab] = useState<'clothing' | 'gamepasses' | 'leagues' | 'menu'>('clothing');
   const [leagueSubTab, setLeagueSubTab] = useState<'league' | 'teams' | 'merch'>('league');
   const [clothingItems, setClothingItems] = useState<ShopItem[]>([]);
   const [gamepassItems, setGamepassItems] = useState<ShopItem[]>([]);
@@ -89,6 +98,10 @@ export default function About() {
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [editingKit, setEditingKit] = useState<TeamKit | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [menuPosts, setMenuPosts] = useState<MenuPost[]>([]);
+  const [selectedMenuCategory, setSelectedMenuCategory] = useState('gfx');
+  const [newMenuPost, setNewMenuPost] = useState({ title: '', description: '', imageUrl: '' });
+  const [editingMenuPost, setEditingMenuPost] = useState<MenuPost | null>(null);
 
   useEffect(() => {
     if (showAdmin) {
@@ -113,6 +126,12 @@ export default function About() {
       fetchTeamKits(selectedTeam.id);
     }
   }, [showAdmin, activeTab, leagueSubTab, selectedTeam]);
+
+  useEffect(() => {
+    if (showAdmin && activeTab === 'menu') {
+      fetchMenuPosts();
+    }
+  }, [showAdmin, activeTab, selectedMenuCategory]);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -146,6 +165,80 @@ export default function About() {
     const res = await fetch(`/api/admin/team-kits?teamId=${teamId}`);
     const data = await res.json();
     setTeamKits(data.kits || []);
+  };
+
+  const fetchMenuPosts = async () => {
+    try {
+      const res = await fetch(`/api/menu/posts?category=${selectedMenuCategory}`);
+      const data = await res.json();
+      setMenuPosts(data.posts || []);
+    } catch (e) {
+      console.error('Failed to fetch menu posts:', e);
+    }
+  };
+
+  const handleCreateMenuPost = async () => {
+    if (!newMenuPost.title || !newMenuPost.description || !newMenuPost.imageUrl) {
+      alert('Please fill in all fields');
+      return;
+    }
+    const res = await fetch('/api/menu/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        category: selectedMenuCategory,
+        title: newMenuPost.title,
+        description: newMenuPost.description,
+        image_url: newMenuPost.imageUrl,
+      }),
+    });
+    if (res.ok) {
+      setNewMenuPost({ title: '', description: '', imageUrl: '' });
+      setShowCreateForm(false);
+      fetchMenuPosts();
+    }
+  };
+
+  const handleEditMenuPost = (post: MenuPost) => {
+    setEditingMenuPost(post);
+    setNewMenuPost({ title: post.title, description: post.description, imageUrl: post.image_url });
+    setShowCreateForm(true);
+  };
+
+  const handleSaveMenuPost = async () => {
+    if (!editingMenuPost || !newMenuPost.title || !newMenuPost.description || !newMenuPost.imageUrl) {
+      alert('Please fill in all fields');
+      return;
+    }
+    const res = await fetch('/api/menu/posts', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: editingMenuPost.id,
+        category: selectedMenuCategory,
+        title: newMenuPost.title,
+        description: newMenuPost.description,
+        image_url: newMenuPost.imageUrl,
+      }),
+    });
+    if (res.ok) {
+      setEditingMenuPost(null);
+      setNewMenuPost({ title: '', description: '', imageUrl: '' });
+      setShowCreateForm(false);
+      fetchMenuPosts();
+    }
+  };
+
+  const handleDeleteMenuPost = async (id: number) => {
+    if (!confirm('Delete this post?')) return;
+    try {
+      const res = await fetch(`/api/menu/posts?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchMenuPosts();
+      }
+    } catch (e) {
+      console.error('Failed to delete menu post:', e);
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -363,6 +456,7 @@ export default function About() {
                 <button onClick={() => { setActiveTab('clothing'); setSelectedLeague(null); setSelectedTeam(null); setSearchQuery(''); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'clothing' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Clothing</button>
                 <button onClick={() => { setActiveTab('gamepasses'); setSelectedLeague(null); setSelectedTeam(null); setSearchQuery(''); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'gamepasses' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Gamepasses</button>
                 <button onClick={() => { setActiveTab('leagues'); setLeagueSubTab('league'); setSelectedLeague(null); setSelectedTeam(null); setSearchQuery(''); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'leagues' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Leagues</button>
+                <button onClick={() => { setActiveTab('menu'); setSelectedMenuCategory('gfx'); setSearchQuery(''); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'menu' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Menu</button>
               </div>
               <div className="flex-1"></div>
               <div className="relative">
@@ -376,7 +470,7 @@ export default function About() {
               </div>
             </div>
 
-            {activeTab !== 'leagues' && (
+            {activeTab !== 'leagues' && activeTab !== 'menu' && (
               <div className="flex gap-4 px-6 pb-0">
                 <button onClick={() => setShowCreateForm(true)} className="px-6 py-3 bg-primary text-black rounded-xl font-bold hover:opacity-90 transition">+ Create</button>
               </div>
@@ -390,7 +484,7 @@ export default function About() {
               </div>
             )}
 
-            {(showCreateForm || editingItem) && activeTab !== 'leagues' && (
+            {(showCreateForm || editingItem) && activeTab !== 'leagues' && activeTab !== 'menu' && (
               <div className="p-6 pt-4">
                 <div className="bg-app-bg rounded-xl p-4 mb-4">
                   <h3 className="text-white font-bold mb-3">{editingItem ? 'Edit Item' : 'Create New'}</h3>
@@ -531,7 +625,56 @@ export default function About() {
               </div>
             )}
 
-            {activeTab !== 'leagues' && (
+            {activeTab === 'menu' && (
+              <div className="p-6">
+                <div className="flex gap-2 mb-4 flex-wrap">
+                  {['gfx', 'shirts', 'logos', 'building', 'ugc', 'assets', 'lessons', 'edits', 'web'].map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedMenuCategory(cat)}
+                      className={`px-4 py-2 rounded-lg font-bold text-sm ${selectedMenuCategory === cat ? 'bg-primary text-black' : 'bg-app-bg text-text-muted'}`}
+                    >
+                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex gap-4 mb-4">
+                  <button onClick={() => { setShowCreateForm(true); setEditingMenuPost(null); setNewMenuPost({ title: '', description: '', imageUrl: '' }); }} className="px-6 py-3 bg-primary text-black rounded-xl font-bold hover:opacity-90 transition">+ Create Post</button>
+                </div>
+
+                {showCreateForm && (
+                  <div className="bg-app-bg rounded-xl p-4 mb-4">
+                    <h3 className="text-white font-bold mb-3">{editingMenuPost ? 'Edit Post' : 'Create New Post'}</h3>
+                    <div className="grid grid-cols-1 gap-3">
+                      <input type="text" placeholder="Title" value={newMenuPost.title} onChange={e => setNewMenuPost({...newMenuPost, title: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
+                      <input type="text" placeholder="Description" value={newMenuPost.description} onChange={e => setNewMenuPost({...newMenuPost, description: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
+                      <input type="text" placeholder="Image URL" value={newMenuPost.imageUrl} onChange={e => setNewMenuPost({...newMenuPost, imageUrl: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <button onClick={editingMenuPost ? handleSaveMenuPost : handleCreateMenuPost} className="px-4 py-2 bg-primary text-black rounded-lg font-bold text-sm">{editingMenuPost ? 'Save' : 'Add'}</button>
+                      <button onClick={() => { setShowCreateForm(false); setEditingMenuPost(null); setNewMenuPost({ title: '', description: '', imageUrl: '' }); }} className="px-4 py-2 bg-app-bg text-text-muted rounded-lg font-medium text-sm">Cancel</button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-4 gap-4">
+                  {menuPosts.map(post => (
+                    <div key={post.id} className="bg-app-bg rounded-xl overflow-hidden relative group">
+                      <button onClick={() => handleEditMenuPost(post)} className="absolute top-2 right-10 w-6 h-6 bg-blue-600 rounded-full text-white text-xs opacity-0 group-hover:opacity-100 z-10">✎</button>
+                      <button onClick={() => handleDeleteMenuPost(post.id)} className="absolute top-2 right-2 w-6 h-6 bg-red-600 rounded-full text-white text-xs opacity-0 group-hover:opacity-100 z-10">✕</button>
+                      {post.image_url ? <img src={post.image_url} alt={post.title} className="w-full h-32 object-cover" /> : <div className="w-full h-32 bg-border" />}
+                      <div className="p-3">
+                        <p className="text-white font-bold text-sm truncate">{post.title}</p>
+                        <p className="text-text-muted text-xs truncate">{post.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab !== 'leagues' && activeTab !== 'menu' && (
               <div className="flex-1 overflow-auto p-6">
                 {loading ? <div className="text-center text-text-muted py-8">Loading...</div> : filteredItems.length === 0 ? <div className="text-center text-text-muted py-8">No items</div> : (
                   <div className="grid grid-cols-4 gap-4">
