@@ -14,7 +14,7 @@ export default function ShowcasePage() {
   const [pantsImage, setPantsImage] = useState<string | null>(null);
   const [lighting, setLighting] = useState<LightingPreset>('studio');
   const [previewMode, setPreviewMode] = useState<'3d' | '2d'>('3d');
-  const [preview2D, setPreview2D] = useState<string>('/dripzels/images/2DPreview.png');
+  const [preview2D, setPreview2D] = useState<string>('/2dprev.jpg');
   const [error, setError] = useState<string | null>(null);
 
   const rendererRef = useRef<any>(null);
@@ -278,43 +278,19 @@ export default function ShowcasePage() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    const baseImg = document.createElement('img');
+    baseImg.crossOrigin = 'anonymous';
+    baseImg.src = '/2dprev.jpg';
 
-    const templateWidth = 585;
-    const templateHeight = 559;
-    const scaleX = templateWidth / 585;
-    const scaleY = templateHeight / 559;
+    baseImg.onload = () => {
+      ctx.drawImage(baseImg, 0, 0, canvasWidth, canvasHeight);
 
-    const drawClothingImage = (clothingSrc: string, isPants: boolean, destX: number, destY: number, destW: number, destH: number, srcX: number, srcY: number, srcW: number, srcH: number) => {
-      const img = document.createElement('img');
-      img.crossOrigin = 'anonymous';
-      img.src = clothingSrc;
-      img.onload = () => {
-        ctx.drawImage(img, srcX * scaleX, srcY * scaleY, srcW * scaleX, srcH * scaleY, destX, destY, destW, destH);
-      };
-    };
-
-    const loadAndDraw = () => {
       if (shirtImage) {
-        ctx.drawImage(document.createElement('img'), 0, 0);
-        
         const shirtImg = document.createElement('img');
         shirtImg.crossOrigin = 'anonymous';
         shirtImg.src = shirtImage;
         shirtImg.onload = () => {
-          const centerX = canvasWidth / 2;
-          const torsoW = 180;
-          const torsoH = 200;
-          const torsoX = centerX - torsoW / 2;
-          const torsoY = 80;
-          ctx.drawImage(shirtImg, 231 * scaleX, 74 * scaleY, 128 * scaleX, 128 * scaleY, torsoX, torsoY, torsoW, torsoH);
-          
-          const armW = 70;
-          const armH = 180;
-          ctx.drawImage(shirtImg, 85 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, torsoX - armW - 15, torsoY + 20, armW, armH);
-          ctx.drawImage(shirtImg, 440 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, torsoX + torsoW + 15, torsoY + 20, armW, armH);
-          
+          ctx.drawImage(shirtImg, 0, 0, 585, 559, 0, 0, canvasWidth, canvasHeight);
           setPreview2D(canvas.toDataURL('image/png'));
         };
       } else if (pantsImage) {
@@ -322,18 +298,7 @@ export default function ShowcasePage() {
         pantsImg.crossOrigin = 'anonymous';
         pantsImg.src = pantsImage;
         pantsImg.onload = () => {
-          const centerX = canvasWidth / 2;
-          const waistW = 160;
-          const waistH = 60;
-          const waistX = centerX - waistW / 2;
-          const waistY = 60;
-          ctx.drawImage(pantsImg, 231 * scaleX, 74 * scaleY, 128 * scaleX, 64 * scaleY, waistX, waistY, waistW, waistH);
-          
-          const legW = 70;
-          const legH = 220;
-          ctx.drawImage(pantsImg, 85 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, waistX, waistY + waistH + 10, legW, legH);
-          ctx.drawImage(pantsImg, 440 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, waistX + waistW - legW, waistY + waistH + 10, legW, legH);
-          
+          ctx.drawImage(pantsImg, 0, 0, 585, 559, 0, 0, canvasWidth, canvasHeight);
           setPreview2D(canvas.toDataURL('image/png'));
         };
       } else {
@@ -341,78 +306,33 @@ export default function ShowcasePage() {
       }
     };
 
-    if (shirtImage && pantsImage) {
-      const shirtImg = document.createElement('img');
-      shirtImg.crossOrigin = 'anonymous';
-      shirtImg.src = shirtImage;
+    baseImg.onerror = () => {
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
       
-      const pantsImg = document.createElement('img');
-      pantsImg.crossOrigin = 'anonymous';
-      pantsImg.src = pantsImage;
-      
-      let loaded = 0;
-      const checkDone = () => {
-        loaded++;
-        if (loaded === 2) {
-          const centerX = canvasWidth / 2;
-          
-          const torsoW = 150;
-          const torsoH = 160;
-          const torsoX = centerX - torsoW / 2;
-          const torsoY = 30;
-          ctx.drawImage(shirtImg, 231 * scaleX, 74 * scaleY, 128 * scaleX, 128 * scaleY, torsoX, torsoY, torsoW, torsoH);
-          
-          const armW = 55;
-          const armH = 150;
-          ctx.drawImage(shirtImg, 85 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, torsoX - armW - 10, torsoY + 15, armW, armH);
-          ctx.drawImage(shirtImg, 440 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, torsoX + torsoW + 10, torsoY + 15, armW, armH);
-          
-          const waistW = 140;
-          const waistH = 50;
-          const waistX = centerX - waistW / 2;
-          const waistY = torsoY + torsoH + 10;
-          ctx.drawImage(pantsImg, 231 * scaleX, 74 * scaleY, 128 * scaleX, 64 * scaleY, waistX, waistY, waistW, waistH);
-          
-          const legW = 60;
-          const legH = 180;
-          ctx.drawImage(pantsImg, 85 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, waistX, waistY + waistH + 5, legW, legH);
-          ctx.drawImage(pantsImg, 440 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, waistX + waistW - legW, waistY + waistH + 5, legW, legH);
-          
+      if (shirtImage) {
+        const shirtImg = document.createElement('img');
+        shirtImg.crossOrigin = 'anonymous';
+        shirtImg.src = shirtImage;
+        shirtImg.onload = () => {
+          ctx.drawImage(shirtImg, 0, 0, 585, 559, 0, 0, canvasWidth, canvasHeight);
           setPreview2D(canvas.toDataURL('image/png'));
-        }
-      };
-      
-      shirtImg.onload = checkDone;
-      pantsImg.onload = checkDone;
-    } else if (shirtImage) {
-      loadAndDraw();
-    } else if (pantsImage) {
-      const pantsImg = document.createElement('img');
-      pantsImg.crossOrigin = 'anonymous';
-      pantsImg.src = pantsImage;
-      pantsImg.onload = () => {
-        const centerX = canvasWidth / 2;
-        const waistW = 160;
-        const waistH = 60;
-        const waistX = centerX - waistW / 2;
-        const waistY = 60;
-        ctx.drawImage(pantsImg, 231 * scaleX, 74 * scaleY, 128 * scaleX, 64 * scaleY, waistX, waistY, waistW, waistH);
-        
-        const legW = 70;
-        const legH = 220;
-        ctx.drawImage(pantsImg, 85 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, waistX, waistY + waistH + 10, legW, legH);
-        ctx.drawImage(pantsImg, 440 * scaleX, 355 * scaleY, 64 * scaleX, 128 * scaleY, waistX + waistW - legW, waistY + waistH + 10, legW, legH);
-        
+        };
+      } else if (pantsImage) {
+        const pantsImg = document.createElement('img');
+        pantsImg.crossOrigin = 'anonymous';
+        pantsImg.src = pantsImage;
+        pantsImg.onload = () => {
+          ctx.drawImage(pantsImg, 0, 0, 585, 559, 0, 0, canvasWidth, canvasHeight);
+          setPreview2D(canvas.toDataURL('image/png'));
+        };
+      } else {
         setPreview2D(canvas.toDataURL('image/png'));
-      };
-    } else {
-      const baseImg = document.createElement('img');
-      baseImg.crossOrigin = 'anonymous';
-      baseImg.src = '/dripzels/images/2DPreview.png';
-      baseImg.onload = () => {
-        ctx.drawImage(baseImg, 0, 0, canvasWidth, canvasHeight);
-        setPreview2D(canvas.toDataURL('image/png'));
-      };
+      }
+    };
+
+    if (!shirtImage && !pantsImage) {
+      setPreview2D('/2dprev.jpg');
     }
   }, [shirtImage, pantsImage]);
 
@@ -457,7 +377,7 @@ export default function ShowcasePage() {
   const handleReset = () => {
     setShirtImage(null);
     setPantsImage(null);
-    setPreview2D('/dripzels/images/2DPreview.png');
+    setPreview2D('/2dprev.jpg');
     setError(null);
     window.location.reload();
   };
