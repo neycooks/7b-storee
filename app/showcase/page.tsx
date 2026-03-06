@@ -284,36 +284,35 @@ export default function ShowcasePage() {
 
     const drawShirt = (shirtImg: HTMLImageElement) => {
       const shirtCanvas = document.createElement('canvas');
-      shirtCanvas.width = 384;
-      shirtCanvas.height = 320;
+      shirtCanvas.width = 256;
+      shirtCanvas.height = 456;
       const shirtCtx = shirtCanvas.getContext('2d');
       if (!shirtCtx) return;
       shirtCtx.imageSmoothingEnabled = false;
       
-      shirtCtx.drawImage(shirtImg, 131, 9, 128, 64, 128, 0, 128, 64);
-      shirtCtx.drawImage(shirtImg, 131, 73, 128, 128, 128, 64, 128, 128);
-      shirtCtx.drawImage(shirtImg, 389, 73, 128, 128, 128, 192, 128, 128);
-      shirtCtx.drawImage(shirtImg, 85, 355, 64, 128, 64, 64, 64, 128);
-      shirtCtx.drawImage(shirtImg, 440, 355, 64, 128, 256, 64, 64, 128);
-      shirtCtx.drawImage(shirtImg, 217, 355, 64, 128, 0, 192, 64, 128);
-      shirtCtx.drawImage(shirtImg, 374, 355, 64, 128, 320, 192, 64, 128);
+      shirtCtx.drawImage(shirtImg, 131, 0, 128, 64, 64, 0, 128, 64);
+      shirtCtx.drawImage(shirtImg, 131, 9, 128, 64, 64, 64, 128, 64);
+      shirtCtx.drawImage(shirtImg, 131, 73, 128, 128, 64, 128, 128, 128);
+      shirtCtx.drawImage(shirtImg, 131, 201, 128, 72, 64, 256, 128, 72);
+      shirtCtx.drawImage(shirtImg, 44, 73, 64, 128, 0, 128, 64, 128);
+      shirtCtx.drawImage(shirtImg, 438, 73, 64, 128, 192, 128, 64, 128);
       
-      ctx.drawImage(shirtCanvas, (canvasWidth - 384) / 2, 20);
+      ctx.drawImage(shirtCanvas, (canvasWidth - 256) / 2, 20);
     };
 
     const drawPants = (pantsImg: HTMLImageElement) => {
       const pantsCanvas = document.createElement('canvas');
-      pantsCanvas.width = 128;
-      pantsCanvas.height = 328;
+      pantsCanvas.width = 192;
+      pantsCanvas.height = 456;
       const pantsCtx = pantsCanvas.getContext('2d');
       if (!pantsCtx) return;
       pantsCtx.imageSmoothingEnabled = false;
       
-      pantsCtx.drawImage(pantsImg, 131, 201, 128, 72, 0, 0, 128, 72);
-      pantsCtx.drawImage(pantsImg, 131, 273, 128, 128, 0, 72, 128, 128);
-      pantsCtx.drawImage(pantsImg, 131, 401, 128, 128, 0, 200, 128, 128);
+      pantsCtx.drawImage(pantsImg, 131, 201, 128, 72, 32, 0, 128, 72);
+      pantsCtx.drawImage(pantsImg, 131, 273, 64, 128, 64, 328, 64, 128);
+      pantsCtx.drawImage(pantsImg, 195, 273, 64, 128, 128, 328, 64, 128);
       
-      ctx.drawImage(pantsCanvas, (canvasWidth - 128) / 2, 20);
+      ctx.drawImage(pantsCanvas, (canvasWidth - 192) / 2, 20);
     };
 
     if (shirtImage && pantsImage) {
