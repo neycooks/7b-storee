@@ -118,7 +118,9 @@ export default function ShowcasePage() {
                 color: 0xffffff,
                 map: texture.clone(),
               });
-              material.map.flipY = false;
+              if (material.map) {
+                material.map.flipY = false;
+              }
 
               model.traverse((node: any) => {
                 if (node.isMesh) {
@@ -231,7 +233,7 @@ export default function ShowcasePage() {
       meshes.forEach((mesh) => {
         if (!mesh) return;
         mesh.traverse((node: any) => {
-          if (node.isMesh) {
+          if (node.isMesh && node.material.map) {
             if (lighting === 'none') {
               node.material = new THREE.MeshBasicMaterial({ map: node.material.map });
             } else {
