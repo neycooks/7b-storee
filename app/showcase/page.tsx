@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Loader2, RotateCcw, Download, Image, Box } from 'lucide-react';
+import { Loader2, RotateCcw } from 'lucide-react';
 
 type LightingPreset = 'none' | 'studio' | 'sunset';
 
@@ -13,8 +13,6 @@ export default function ShowcasePage() {
   const [shirtImage, setShirtImage] = useState<string | null>(null);
   const [pantsImage, setPantsImage] = useState<string | null>(null);
   const [lighting, setLighting] = useState<LightingPreset>('studio');
-  const [previewMode, setPreviewMode] = useState<'3d' | '2d'>('3d');
-  const [preview2D, setPreview2D] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const rendererRef = useRef<any>(null);
@@ -269,93 +267,6 @@ export default function ShowcasePage() {
     }
   };
 
-  const generate2DPreview = useCallback(() => {
-    const canvasWidth = 256;
-    const canvasHeight = 384;
-    const canvas = document.createElement('canvas');
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    ctx.imageSmoothingEnabled = false;
-
-    const drawCombined = (shirtImg: HTMLImageElement, pantsImg: HTMLImageElement) => {
-      ctx.drawImage(shirtImg, 131, 0, 128, 64, 64, 0, 128, 64);
-      ctx.drawImage(shirtImg, 131, 73, 128, 128, 64, 64, 128, 128);
-      ctx.drawImage(shirtImg, 44, 73, 64, 128, 0, 64, 64, 128);
-      ctx.drawImage(shirtImg, 438, 73, 64, 128, 192, 64, 64, 128);
-      ctx.drawImage(pantsImg, 131, 273, 64, 128, 64, 192, 64, 128);
-      ctx.drawImage(pantsImg, 195, 273, 64, 128, 128, 192, 64, 128);
-    };
-
-    const drawShirtOnly = (shirtImg: HTMLImageElement) => {
-      ctx.drawImage(shirtImg, 131, 0, 128, 64, 64, 0, 128, 64);
-      ctx.drawImage(shirtImg, 131, 73, 128, 128, 64, 64, 128, 128);
-      ctx.drawImage(shirtImg, 44, 73, 64, 128, 0, 64, 64, 128);
-      ctx.drawImage(shirtImg, 438, 73, 64, 128, 192, 64, 64, 128);
-    };
-
-    const drawPantsOnly = (pantsImg: HTMLImageElement) => {
-      ctx.drawImage(pantsImg, 131, 273, 64, 128, 64, 0, 64, 128);
-      ctx.drawImage(pantsImg, 195, 273, 64, 128, 128, 0, 64, 128);
-    };
-
-    if (shirtImage && pantsImage) {
-      const shirtImg = document.createElement('img');
-      shirtImg.crossOrigin = 'anonymous';
-      shirtImg.src = shirtImage;
-      
-      const pantsImg = document.createElement('img');
-      pantsImg.crossOrigin = 'anonymous';
-      pantsImg.src = pantsImage;
-      
-      let loaded = 0;
-      const checkDone = () => {
-        loaded++;
-        if (loaded === 2) {
-          drawCombined(shirtImg, pantsImg);
-          setPreview2D(canvas.toDataURL('image/png'));
-        }
-      };
-      
-      shirtImg.onload = checkDone;
-      pantsImg.onload = checkDone;
-    } else if (shirtImage) {
-      const shirtImg = document.createElement('img');
-      shirtImg.crossOrigin = 'anonymous';
-      shirtImg.src = shirtImage;
-      shirtImg.onload = () => {
-        drawShirtOnly(shirtImg);
-        setPreview2D(canvas.toDataURL('image/png'));
-      };
-    } else if (pantsImage) {
-      const pantsImg = document.createElement('img');
-      pantsImg.crossOrigin = 'anonymous';
-      pantsImg.src = pantsImage;
-      pantsImg.onload = () => {
-        drawPantsOnly(pantsImg);
-        setPreview2D(canvas.toDataURL('image/png'));
-      };
-    } else {
-      const baseImg = document.createElement('img');
-      baseImg.crossOrigin = 'anonymous';
-      baseImg.src = '/2dprev.jpg';
-      baseImg.onload = () => {
-        ctx.drawImage(baseImg, 0, 0, 256, 384);
-        setPreview2D(canvas.toDataURL('image/png'));
-      };
-    }
-  }, [shirtImage, pantsImage]);
-
-  useEffect(() => {
-    if (!loading) {
-      generate2DPreview();
-    }
-  }, [loading, shirtImage, pantsImage, generate2DPreview]);
-
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'shirt' | 'pants') => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -391,17 +302,8 @@ export default function ShowcasePage() {
   const handleReset = () => {
     setShirtImage(null);
     setPantsImage(null);
-    setPreview2D(null);
     setError(null);
     window.location.reload();
-  };
-
-  const handleDownload = () => {
-    if (!preview2D) return;
-    const link = document.createElement('a');
-    link.download = 'clothing-preview.png';
-    link.href = preview2D;
-    link.click();
   };
 
   return (
@@ -417,31 +319,13 @@ export default function ShowcasePage() {
       <div className="flex flex-col gap-4 md:gap-6">
         <div className="bg-card-bg rounded-xl p-3 md:p-4">
           <div className="flex justify-between items-center mb-3 md:mb-4">
-            <h2 className="text-white font-bold text-lg">Preview</h2>
-            <div className="flex gap-2">
-              <button
-                onClick={() => { setPreviewMode('3d'); }}
-                className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition ${
-                  previewMode === '3d' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'
-                }`}
-              >
-                <Box size={16} /> 3D
-              </button>
-              <button
-                onClick={() => { setPreviewMode('2d'); generate2DPreview(); }}
-                className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition ${
-                  previewMode === '2d' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'
-                }`}
-              >
-                <Image size={16} /> 2D
-              </button>
-            </div>
+            <h2 className="text-white font-bold text-lg">3D Preview</h2>
           </div>
 
           <div 
             ref={containerRef}
             className="relative bg-[#0d0d0d] rounded-lg overflow-hidden"
-            style={{ height: previewMode === '3d' ? '50vh md:600px' : '500px' }}
+            style={{ height: '50vh md:600px' }}
           >
             {loading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0d0d0d] z-10">
@@ -450,11 +334,7 @@ export default function ShowcasePage() {
               </div>
             )}
 
-            {previewMode === '3d' ? (
-              <canvas ref={canvasRef} className="w-full h-full" />
-            ) : preview2D ? (
-              <img src={preview2D} alt="2D Preview" className="w-full h-full object-contain" />
-            ) : null}
+            <canvas ref={canvasRef} className="w-full h-full" />
           </div>
 
           <div className="mt-3 md:mt-4">
@@ -519,20 +399,12 @@ export default function ShowcasePage() {
             </div>
           </div>
 
-          <div className="flex gap-3">
-            <button
-              onClick={handleReset}
-              className="flex-1 py-3 bg-app-bg text-white font-bold rounded-lg hover:bg-border transition flex items-center justify-center gap-2"
-            >
-              <RotateCcw size={18} /> Reset
-            </button>
-            <button
-              onClick={handleDownload}
-              className="flex-1 py-3 bg-primary text-black font-bold rounded-lg hover:opacity-90 transition flex items-center justify-center gap-2"
-            >
-              <Download size={18} /> Download
-            </button>
-          </div>
+          <button
+            onClick={handleReset}
+            className="w-full py-3 bg-app-bg text-white font-bold rounded-lg hover:bg-border transition flex items-center justify-center gap-2"
+          >
+            <RotateCcw size={18} /> Reset
+          </button>
         </div>
       </div>
     </div>
