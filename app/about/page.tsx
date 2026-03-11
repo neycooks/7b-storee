@@ -102,6 +102,9 @@ export default function About() {
   const [selectedMenuCategory, setSelectedMenuCategory] = useState('gfx');
   const [newMenuPost, setNewMenuPost] = useState({ title: '', description: '', imageUrl: '' });
   const [editingMenuPost, setEditingMenuPost] = useState<MenuPost | null>(null);
+  const [draggedItem, setDraggedItem] = useState<ShopItem | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [orderChanged, setOrderChanged] = useState(false);
 
   useEffect(() => {
     if (showAdmin) {
@@ -398,6 +401,65 @@ export default function About() {
     else { setLoginError('Incorrect password'); }
   };
 
+  const handleDragStart = (e: React.DragEvent, item: ShopItem) => {
+    setDraggedItem(item);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (!draggedItem) return;
+
+    const currentItems = activeTab === 'clothing' ? clothingItems : activeTab === 'gamepasses' ? gamepassItems : [];
+    const itemIndex = currentItems.findIndex(i => i.id === draggedItem.id);
+    if (itemIndex === -1) return;
+
+    const newItems = [...currentItems];
+    newItems.splice(itemIndex, 1);
+    newItems.splice(dropIndex, 0, draggedItem);
+
+    if (activeTab === 'clothing') {
+      setClothingItems(newItems);
+    } else if (activeTab === 'gamepasses') {
+      setGamepassItems(newItems);
+    }
+
+    setDraggedItem(null);
+    setDragOverIndex(null);
+    setOrderChanged(true);
+  };
+
+  const handleSaveOrder = async () => {
+    const currentItems = activeTab === 'clothing' ? clothingItems : activeTab === 'gamepasses' ? gamepassItems : [];
+    const type = activeTab === 'clothing' ? 'item' : 'gamepass';
+    
+    try {
+      const res = await fetch('/api/admin/shop-items/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: currentItems.map((item, index) => ({ id: item.id, sort_order: index })),
+          type
+        })
+      });
+      if (res.ok) {
+        setOrderChanged(false);
+        alert('Order saved!');
+      }
+    } catch (e) {
+      console.error('Failed to save order:', e);
+    }
+  };
+
   const items = activeTab === 'clothing' ? clothingItems : activeTab === 'gamepasses' ? gamepassItems : [];
   const filteredItems = items.filter(item => !searchQuery || (item.name && item.name.toLowerCase().includes(searchQuery.toLowerCase())));
   const filteredLeagues = leagues.filter(l => !searchQuery || l.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -678,8 +740,17 @@ export default function About() {
               <div className="flex-1 overflow-auto p-6">
                 {loading ? <div className="text-center text-text-muted py-8">Loading...</div> : filteredItems.length === 0 ? <div className="text-center text-text-muted py-8">No items</div> : (
                   <div className="grid grid-cols-4 gap-4">
-                    {filteredItems.map(item => (
-                      <div key={item.id} className="bg-app-bg rounded-xl overflow-hidden hover:ring-2 ring-primary/50 transition group relative">
+                    {filteredItems.map((item, index) => (
+                      <div 
+                        key={item.id} 
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, item)}
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, index)}
+                        className={`bg-app-bg rounded-xl overflow-hidden hover:ring-2 ring-primary/50 transition group relative cursor-move ${dragOverIndex === index ? 'ring-2 ring-yellow-400' : ''}`}
+                      >
+                        <button className="absolute top-2 left-2 w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10 cursor-grab">☰</button>
                         <button onClick={() => handleEdit(item)} className="absolute top-2 right-12 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10">✎</button>
                         <button onClick={() => handleDelete(item.id)} className="absolute top-2 right-2 w-8 h-8 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10">✕</button>
                         <div className="aspect-square bg-border flex items-center justify-center">
@@ -691,6 +762,13 @@ export default function About() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+                {orderChanged && (
+                  <div className="fixed bottom-6 right-6 z-50">
+                    <button onClick={handleSaveOrder} className="px-6 py-3 bg-primary text-black font-bold rounded-xl shadow-lg hover:opacity-90 transition">
+                      Save Order
+                    </button>
                   </div>
                 )}
               </div>

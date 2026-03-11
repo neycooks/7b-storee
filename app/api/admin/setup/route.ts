@@ -29,6 +29,10 @@ export async function GET() {
       await sql`ALTER TABLE shop_items ADD COLUMN IF NOT EXISTS type TEXT CHECK (type IN ('item', 'gamepass', 'shirt', 'pants'));`;
     } catch (e) {}
 
+    try {
+      await sql`ALTER TABLE shop_items ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;`;
+    } catch (e) {}
+
     await sql`
       CREATE TABLE IF NOT EXISTS leagues (
         id SERIAL PRIMARY KEY,
