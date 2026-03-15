@@ -69,6 +69,19 @@ export async function GET() {
     `;
     console.log('[Setup] team_kits table created');
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS rankings (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        username TEXT NOT NULL,
+        icon_url TEXT,
+        thumbnail_url TEXT,
+        rank INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `;
+    console.log('[Setup] rankings table created');
+
     return NextResponse.json({ ok: true, message: 'All tables ready' });
   } catch (error) {
     console.error('[Setup] Error:', error);

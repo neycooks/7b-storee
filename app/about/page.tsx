@@ -72,13 +72,23 @@ interface MenuPost {
   created_at: string;
 }
 
+interface Ranking {
+  id: number;
+  name: string;
+  username: string;
+  icon_url: string | null;
+  thumbnail_url: string | null;
+  rank: number;
+  created_at: string;
+}
+
 export default function About() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [showLogin, setShowLogin] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
-  const [activeTab, setActiveTab] = useState<'clothing' | 'gamepasses' | 'leagues' | 'menu'>('clothing');
+  const [activeTab, setActiveTab] = useState<'clothing' | 'gamepasses' | 'leagues' | 'menu' | 'rankings'>('clothing');
   const [leagueSubTab, setLeagueSubTab] = useState<'league' | 'teams' | 'merch'>('league');
   const [clothingItems, setClothingItems] = useState<ShopItem[]>([]);
   const [gamepassItems, setGamepassItems] = useState<ShopItem[]>([]);
@@ -105,6 +115,12 @@ export default function About() {
   const [draggedItem, setDraggedItem] = useState<ShopItem | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [orderChanged, setOrderChanged] = useState(false);
+  const [rankings, setRankings] = useState<Ranking[]>([]);
+  const [newRanking, setNewRanking] = useState({ name: '', username: '', iconUrl: '', thumbnailUrl: '' });
+  const [editingRanking, setEditingRanking] = useState<Ranking | null>(null);
+  const [rankingDragIdx, setRankingDragIdx] = useState<number | null>(null);
+  const [rankingDragOverIdx, setRankingDragOverIdx] = useState<number | null>(null);
+  const [rankingsChanged, setRankingsChanged] = useState(false);
 
   useEffect(() => {
     if (showAdmin) {
@@ -135,6 +151,22 @@ export default function About() {
       fetchMenuPosts();
     }
   }, [showAdmin, activeTab, selectedMenuCategory]);
+
+  const fetchRankings = async () => {
+    try {
+      const res = await fetch('/api/rankings');
+      const data = await res.json();
+      setRankings(data.rankings || []);
+    } catch (e) {
+      console.error('Failed to fetch rankings:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (showAdmin && activeTab === 'rankings') {
+      fetchRankings();
+    }
+  }, [showAdmin, activeTab]);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -241,6 +273,80 @@ export default function About() {
       }
     } catch (e) {
       console.error('Failed to delete menu post:', e);
+    }
+  };
+
+  const handleCreateRanking = async () => {
+    if (!newRanking.name || !newRanking.username) {
+      alert('Please fill in name and username');
+      return;
+    }
+    const res = await fetch('/api/rankings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: newRanking.name,
+        username: newRanking.username,
+        icon_url: newRanking.iconUrl,
+        thumbnail_url: newRanking.thumbnailUrl,
+      }),
+    });
+    if (res.ok) {
+      setNewRanking({ name: '', username: '', iconUrl: '', thumbnailUrl: '' });
+      setShowCreateForm(false);
+      fetchRankings();
+    }
+  };
+
+  const handleDeleteRanking = async (id: number) => {
+    if (!confirm('Delete this ranking?')) return;
+    try {
+      const res = await fetch(`/api/rankings?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchRankings();
+      }
+    } catch (e) {
+      console.error('Failed to delete ranking:', e);
+    }
+  };
+
+  const handleRankingDragStart = (e: React.DragEvent, index: number) => {
+    setRankingDragIdx(index);
+  };
+
+  const handleRankingDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setRankingDragOverIdx(index);
+  };
+
+  const handleRankingDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (rankingDragIdx === null) return;
+    const newRankings = [...rankings];
+    const [moved] = newRankings.splice(rankingDragIdx, 1);
+    newRankings.splice(dropIndex, 0, moved);
+    setRankings(newRankings);
+    setRankingDragIdx(null);
+    setRankingDragOverIdx(null);
+    setRankingsChanged(true);
+  };
+
+  const handleSaveRankingsOrder = async () => {
+    try {
+      const res = await fetch('/api/rankings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: rankings.map((r, i) => ({ id: r.id, rank: i + 1 }))
+        })
+      });
+      if (res.ok) {
+        setRankingsChanged(false);
+        fetchRankings();
+        alert('Order saved!');
+      }
+    } catch (e) {
+      console.error('Failed to save rankings order:', e);
     }
   };
 
@@ -519,6 +625,7 @@ export default function About() {
                 <button onClick={() => { setActiveTab('gamepasses'); setSelectedLeague(null); setSelectedTeam(null); setSearchQuery(''); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'gamepasses' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Gamepasses</button>
                 <button onClick={() => { setActiveTab('leagues'); setLeagueSubTab('league'); setSelectedLeague(null); setSelectedTeam(null); setSearchQuery(''); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'leagues' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Leagues</button>
                 <button onClick={() => { setActiveTab('menu'); setSelectedMenuCategory('gfx'); setSearchQuery(''); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'menu' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Menu</button>
+                <button onClick={() => { setActiveTab('rankings'); setSearchQuery(''); }} className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'rankings' ? 'bg-primary text-black' : 'bg-app-bg text-text-muted hover:text-white'}`}>Rankings</button>
               </div>
               <div className="flex-1"></div>
               <div className="relative">
@@ -736,7 +843,62 @@ export default function About() {
               </div>
             )}
 
-            {activeTab !== 'leagues' && activeTab !== 'menu' && (
+            {activeTab === 'rankings' && (
+              <div className="p-6">
+                <div className="flex gap-4 mb-4">
+                  <button onClick={() => { setShowCreateForm(true); setEditingRanking(null); setNewRanking({ name: '', username: '', iconUrl: '', thumbnailUrl: '' }); }} className="px-6 py-3 bg-primary text-black rounded-xl font-bold hover:opacity-90 transition">+ Add Ranking</button>
+                </div>
+
+                {showCreateForm && (
+                  <div className="bg-app-bg rounded-xl p-4 mb-4">
+                    <h3 className="text-white font-bold mb-3">Add New Ranking</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input type="text" placeholder="Name" value={newRanking.name} onChange={e => setNewRanking({...newRanking, name: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
+                      <input type="text" placeholder="Username" value={newRanking.username} onChange={e => setNewRanking({...newRanking, username: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
+                      <input type="text" placeholder="Icon URL" value={newRanking.iconUrl} onChange={e => setNewRanking({...newRanking, iconUrl: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
+                      <input type="text" placeholder="Thumbnail URL" value={newRanking.thumbnailUrl} onChange={e => setNewRanking({...newRanking, thumbnailUrl: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <button onClick={handleCreateRanking} className="px-4 py-2 bg-primary text-black rounded-lg font-bold text-sm">Add</button>
+                      <button onClick={() => { setShowCreateForm(false); setEditingRanking(null); }} className="px-4 py-2 bg-app-bg text-text-muted rounded-lg font-medium text-sm">Cancel</button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  {rankings.map((item, index) => (
+                    <div 
+                      key={item.id}
+                      draggable
+                      onDragStart={(e) => handleRankingDragStart(e, index)}
+                      onDragOver={(e) => handleRankingDragOver(e, index)}
+                      onDrop={(e) => handleRankingDrop(e, index)}
+                      className={`bg-app-bg rounded-xl p-4 flex items-center gap-4 cursor-move ${rankingDragOverIdx === index ? 'ring-2 ring-yellow-400' : ''}`}
+                    >
+                      <div className="w-8 flex items-center justify-center text-text-muted font-bold">{index + 1}</div>
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-border">
+                        {item.thumbnail_url ? <img src={item.thumbnail_url} alt={item.name} className="w-full h-full object-cover" /> : item.icon_url ? <img src={item.icon_url} alt={item.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-text-muted text-xs">No img</div>}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-white font-bold">{item.name}</p>
+                        <p className="text-text-muted text-sm">@{item.username}</p>
+                      </div>
+                      <button onClick={() => handleDeleteRanking(item.id)} className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white text-sm">✕</button>
+                    </div>
+                  ))}
+                </div>
+
+                {rankingsChanged && (
+                  <div className="fixed bottom-6 right-6 z-50">
+                    <button onClick={handleSaveRankingsOrder} className="px-6 py-3 bg-primary text-black font-bold rounded-xl shadow-lg hover:opacity-90 transition">
+                      Save Order
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab !== 'leagues' && activeTab !== 'menu' && activeTab !== 'rankings' && (
               <div className="flex-1 overflow-auto p-6">
                 {loading ? <div className="text-center text-text-muted py-8">Loading...</div> : filteredItems.length === 0 ? <div className="text-center text-text-muted py-8">No items</div> : (
                   <div className="grid grid-cols-4 gap-4">
