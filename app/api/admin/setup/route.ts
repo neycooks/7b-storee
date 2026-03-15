@@ -76,11 +76,20 @@ export async function GET() {
         username TEXT NOT NULL,
         icon_url TEXT,
         thumbnail_url TEXT,
-        rank INTEGER DEFAULT 0,
+        rank TEXT DEFAULT 'Beginner',
+        category TEXT DEFAULT 'CLOTHING',
         created_at TIMESTAMP DEFAULT NOW()
       );
     `;
     console.log('[Setup] rankings table created');
+
+    try {
+      await sql`ALTER TABLE rankings ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'CLOTHING';`;
+    } catch (e) {}
+
+    try {
+      await sql`ALTER TABLE rankings ADD COLUMN IF NOT EXISTS rank TEXT DEFAULT 'Beginner';`;
+    } catch (e) {}
 
     return NextResponse.json({ ok: true, message: 'All tables ready' });
   } catch (error) {
