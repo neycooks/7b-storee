@@ -11,8 +11,11 @@ export async function POST(req: NextRequest) {
 
     const cookie = process.env.ROBLOX_SECURITY_COOKIE;
     if (!cookie) {
+      console.error('[Roblox API] No cookie configured!');
       return NextResponse.json({ error: 'Server not configured with Roblox cookie' }, { status: 500 });
     }
+
+    console.log('[Roblox API] Cookie length:', cookie.length);
 
     const headers = {
       'Cookie': `.ROBLOSECURITY=${cookie}`,
@@ -29,15 +32,15 @@ export async function POST(req: NextRequest) {
     const userId = searchData.data[0].id;
     const userName = searchData.data[0].name;
 
-    const [avatarRes, thumbRes] = await Promise.all([
-      fetch(`https://avatar.roblox.com/v1/users/${userId}/avatar`, { headers }),
-      fetch(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=352x352&format=Png&isCircular=false`, { headers })
-    ]);
+    console.log('[Roblox API] Fetching avatar for userId:', userId);
 
+    const avatarRes = await fetch(`https://avatar.roblox.com/v1/users/${userId}/avatar`, { headers });
     const avatar = await avatarRes.json();
-    const thumbnail = await thumbRes.json();
+
+    console.log('[Roblox API] Full avatar response:', JSON.stringify(avatar).substring(0, 1500));
 
     if (!avatar || avatar.errors) {
+      console.error('[Roblox API] Avatar errors:', avatar?.errors);
       return NextResponse.json({ error: 'Failed to fetch avatar' }, { status: 500 });
     }
 
@@ -62,13 +65,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    console.log('[Roblox API] Shirt:', avatar.shirt, 'Pants:', avatar.pants, 'Assets count:', avatar.assets?.length || 0);
+
     return NextResponse.json({
       userId,
       userName,
       shirtAssetId: avatar.shirt?.id,
       pantsAssetId: avatar.pants?.id,
-      accessories,
-      thumbnailUrl: thumbnail.data?.[0]?.imageUrl || ''
+      accessories
     });
   } catch (error) {
     console.error('[Roblox API] Error:', error);
