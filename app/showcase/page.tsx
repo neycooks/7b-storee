@@ -97,6 +97,72 @@ export default function ShowcasePage() {
     );
   };
 
+  const loadAccessoryAsModel = async (accessory: RobloxAccessory) => {
+    if (!sceneRef.current || !THREEref.current) return;
+
+    const THREE = THREEref.current;
+    const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
+    const loader = new GLTFLoader();
+    
+    const assetUrl = `/api/roblox-asset?id=${accessory.id}`;
+    
+    loader.load(
+      assetUrl,
+      (gltf: any) => {
+        const model = gltf.scene;
+        
+        let posX = 0, posY = 0.4, posZ = 0.15;
+        
+        if (accessory.assetType === 'Hair') {
+          posY = 0.42;
+          posZ = 0.12;
+        } else if (accessory.assetType === 'Hat') {
+          posY = 0.44;
+          posZ = 0.1;
+        } else if (accessory.assetType === 'FaceAccessory') {
+          posY = 0.34;
+          posZ = 0.16;
+        } else if (accessory.assetType === 'NeckAccessory') {
+          posY = 0.24;
+          posZ = 0.12;
+        } else if (accessory.assetType === 'ShoulderAccessory') {
+          posX = 0.28;
+          posY = 0.18;
+          posZ = 0.08;
+        } else if (accessory.assetType === 'BackAccessory') {
+          posY = 0.2;
+          posZ = -0.16;
+        } else if (accessory.assetType === 'FrontAccessory') {
+          posY = 0.14;
+          posZ = 0.16;
+        } else if (accessory.assetType === 'WaistAccessory') {
+          posY = 0.04;
+          posZ = 0.1;
+        }
+
+        model.position.set(posX, posY, posZ);
+        model.scale.setScalar(0.4);
+        
+        model.traverse((node: any) => {
+          if (node.isMesh) {
+            node.castShadow = true;
+            node.receiveShadow = true;
+          }
+        });
+        
+        sceneRef.current.add(model);
+        accessoryMeshesRef.current.push(model);
+        console.log('[Showcase] Added 3D accessory:', accessory.assetType, accessory.name);
+      },
+      undefined,
+      (err: any) => {
+        console.error('[Showcase] Failed to load 3D accessory:', accessory.id, err);
+        // Fallback to plane
+        loadAccessoryAsPlane(accessory);
+      }
+    );
+  };
+
   const loadAccessoryAsPlane = async (accessory: RobloxAccessory) => {
     if (!sceneRef.current || !THREEref.current) return;
 
@@ -229,7 +295,7 @@ export default function ShowcasePage() {
 
       if (accessories && accessories.length > 0) {
         for (const accessory of accessories) {
-          await loadAccessoryAsPlane(accessory);
+          await loadAccessoryAsModel(accessory);
         }
       }
 
