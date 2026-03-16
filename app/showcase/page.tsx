@@ -43,7 +43,7 @@ export default function ShowcasePage() {
   const legsMeshRef = useRef<any>(null);
   const handsMeshRef = useRef<any>(null);
   const headMeshRef = useRef<any>(null);
-  const accessoriesGroupRef = useRef<any>(null);
+  const accessoryMeshesRef = useRef<any[]>([]);
   const materialsRef = useRef<{ torso: any; legs: any; hands: any; head: any }>({ torso: null, legs: null, hands: null, head: null });
   const loadedRef = useRef(false);
   const animationRef = useRef<number>(0);
@@ -51,126 +51,114 @@ export default function ShowcasePage() {
   const THREEref = useRef<any>(null);
 
   const clearAccessories = useCallback(() => {
-    if (sceneRef.current && accessoriesGroupRef.current) {
-      sceneRef.current.remove(accessoriesGroupRef.current);
-    }
-    accessoriesGroupRef.current = null;
+    accessoryMeshesRef.current.forEach((mesh) => {
+      if (sceneRef.current && mesh) {
+        sceneRef.current.remove(mesh);
+      }
+    });
+    accessoryMeshesRef.current = [];
   }, []);
 
-  const applyTextureToModel = async (url: string, type: 'shirt' | 'pants') => {
+  const applyTexture = async (url: string, type: 'shirt' | 'pants') => {
     if (!THREEref.current || !sceneInitializedRef.current) return;
 
     const THREE = THREEref.current;
+    const textureLoader = new THREE.TextureLoader();
     
-    try {
-      const textureLoader = new THREE.TextureLoader();
-      
-      textureLoader.load(
-        url,
-        (texture: any) => {
-          texture.flipY = false;
-          texture.colorSpace = THREE.SRGBColorSpace;
-          texture.wrapS = THREE.RepeatWrapping;
-          texture.wrapT = THREE.RepeatWrapping;
-          texture.repeat.set(1, 1);
-          
-          if (type === 'shirt') {
-            if (materialsRef.current.torso) {
-              materialsRef.current.torso.map = texture;
-              materialsRef.current.torso.needsUpdate = true;
-            }
-            if (materialsRef.current.hands) {
-              materialsRef.current.hands.map = texture.clone();
-              materialsRef.current.hands.needsUpdate = true;
-            }
-          } else if (type === 'pants') {
-            if (materialsRef.current.legs) {
-              materialsRef.current.legs.map = texture;
-              materialsRef.current.legs.needsUpdate = true;
-            }
+    textureLoader.load(
+      url,
+      (texture: any) => {
+        texture.flipY = false;
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        
+        if (type === 'shirt') {
+          if (materialsRef.current.torso) {
+            materialsRef.current.torso.map = texture;
+            materialsRef.current.torso.needsUpdate = true;
           }
-        },
-        undefined,
-        (err: any) => {
-          console.error('[Showcase] Failed to load texture:', type, err);
+          if (materialsRef.current.hands) {
+            materialsRef.current.hands.map = texture.clone();
+            materialsRef.current.hands.needsUpdate = true;
+          }
+        } else if (type === 'pants') {
+          if (materialsRef.current.legs) {
+            materialsRef.current.legs.map = texture;
+            materialsRef.current.legs.needsUpdate = true;
+          }
         }
-      );
-    } catch (err) {
-      console.error('[Showcase] Error loading texture:', type, err);
-    }
+        console.log('[Showcase] Applied texture:', type);
+      },
+      undefined,
+      (err: any) => {
+        console.error('[Showcase] Failed to load texture:', type, err);
+      }
+    );
   };
 
-  const loadAccessoryModel = async (accessory: RobloxAccessory) => {
-    if (!sceneRef.current || !THREEref.current || !accessoriesGroupRef.current) return;
+  const loadAccessoryAsPlane = async (accessory: RobloxAccessory) => {
+    if (!sceneRef.current || !THREEref.current) return;
 
     const THREE = THREEref.current;
-    const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
+    const textureLoader = new THREE.TextureLoader();
+    
+    const thumbUrl = `/api/roblox-thumbnail?assetId=${accessory.id}`;
+    
+    textureLoader.load(
+      thumbUrl,
+      (texture: any) => {
+        texture.flipY = false;
+        texture.colorSpace = THREE.SRGBColorSpace;
+        
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          side: THREE.DoubleSide,
+        });
 
-    const loader = new GLTFLoader();
-    
-    const assetUrl = `/api/roblox-asset?id=${accessory.id}`;
-    
-    return new Promise<void>((resolve) => {
-      loader.load(
-        assetUrl,
-        (gltf: any) => {
-          const model = gltf.scene;
-          
-          let posY = 0.4;
-          let posX = 0;
-          let posZ = 0.15;
-          let rotY = 0;
-          let scale = 0.4;
-          
-          if (accessory.assetType === 'Hat' || accessory.assetType === 'Hair') {
-            posY = 0.42;
-            posX = 0;
-            posZ = 0.12;
-          } else if (accessory.assetType === 'FaceAccessory') {
-            posY = 0.34;
-            posZ = 0.16;
-          } else if (accessory.assetType === 'NeckAccessory') {
-            posY = 0.24;
-            posZ = 0.12;
-          } else if (accessory.assetType === 'ShoulderAccessory') {
-            posY = 0.18;
-            posX = 0.28;
-            posZ = 0.08;
-            rotY = -0.4;
-          } else if (accessory.assetType === 'BackAccessory') {
-            posY = 0.18;
-            posZ = -0.18;
-            rotY = 3.14159;
-          } else if (accessory.assetType === 'FrontAccessory') {
-            posY = 0.12;
-            posZ = 0.18;
-          } else if (accessory.assetType === 'WaistAccessory') {
-            posY = 0.04;
-            posZ = 0.1;
-          }
-          
-          model.position.set(posX, posY, posZ);
-          model.rotation.y = rotY;
-          model.scale.setScalar(scale);
-          
-          model.traverse((node: any) => {
-            if (node.isMesh) {
-              node.castShadow = true;
-              node.receiveShadow = true;
-            }
-          });
-          
-          accessoriesGroupRef.current.add(model);
-          console.log('[Showcase] Loaded accessory:', accessory.assetType, accessory.name);
-          resolve();
-        },
-        undefined,
-        (err: any) => {
-          console.error('[Showcase] Failed to load accessory:', accessory.id, accessory.name, err);
-          resolve();
+        const plane = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.25, 0.25),
+          material
+        );
+
+        let posX = 0, posY = 0.4, posZ = 0.15;
+        
+        if (accessory.assetType === 'Hat' || accessory.assetType === 'Hair') {
+          posY = 0.42;
+          posZ = 0.14;
+        } else if (accessory.assetType === 'FaceAccessory') {
+          posY = 0.34;
+          posZ = 0.16;
+        } else if (accessory.assetType === 'NeckAccessory') {
+          posY = 0.24;
+          posZ = 0.14;
+        } else if (accessory.assetType === 'ShoulderAccessory') {
+          posX = 0.28;
+          posY = 0.18;
+          posZ = 0.1;
+        } else if (accessory.assetType === 'BackAccessory') {
+          posY = 0.2;
+          posZ = -0.18;
+        } else if (accessory.assetType === 'FrontAccessory') {
+          posY = 0.14;
+          posZ = 0.18;
+        } else if (accessory.assetType === 'WaistAccessory') {
+          posY = 0.04;
+          posZ = 0.12;
         }
-      );
-    });
+
+        plane.position.set(posX, posY, posZ);
+        
+        sceneRef.current.add(plane);
+        accessoryMeshesRef.current.push(plane);
+        console.log('[Showcase] Added accessory plane:', accessory.assetType, accessory.name);
+      },
+      undefined,
+      (err: any) => {
+        console.error('[Showcase] Failed to load accessory:', accessory.id, err);
+      }
+    );
   };
 
   const fetchRobloxAvatar = async () => {
@@ -198,6 +186,8 @@ export default function ShowcasePage() {
         }
       }
 
+      console.log('[Showcase] Fetching avatar for:', username);
+
       const res = await fetch('/api/roblox-avatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -205,6 +195,7 @@ export default function ShowcasePage() {
       });
 
       const data = await res.json();
+      console.log('[Showcase] API response:', data);
 
       if (!res.ok) {
         throw new Error(data.error || 'Failed to fetch avatar');
@@ -223,7 +214,7 @@ export default function ShowcasePage() {
       if (shirtAssetId) {
         const shirtUrl = `/api/roblox-image?id=${shirtAssetId}`;
         setShirtImage(shirtUrl);
-        applyTextureToModel(shirtUrl, 'shirt');
+        applyTexture(shirtUrl, 'shirt');
       } else {
         setShirtImage(null);
       }
@@ -231,23 +222,19 @@ export default function ShowcasePage() {
       if (pantsAssetId) {
         const pantsUrl = `/api/roblox-image?id=${pantsAssetId}`;
         setPantsImage(pantsUrl);
-        applyTextureToModel(pantsUrl, 'pants');
+        applyTexture(pantsUrl, 'pants');
       } else {
         setPantsImage(null);
       }
 
       if (accessories && accessories.length > 0) {
-        if (!accessoriesGroupRef.current) {
-          accessoriesGroupRef.current = new THREEref.current.Group();
-          sceneRef.current.add(accessoriesGroupRef.current);
-        }
-        
         for (const accessory of accessories) {
-          await loadAccessoryModel(accessory);
+          await loadAccessoryAsPlane(accessory);
         }
       }
 
     } catch (err) {
+      console.error('[Showcase] Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch Roblox avatar');
     } finally {
       setFetchingAvatar(false);
@@ -260,11 +247,11 @@ export default function ShowcasePage() {
     if (type === 'shirt') {
       setCustomShirtUrl(url);
       setShirtImage(url);
-      applyTextureToModel(url, 'shirt');
+      applyTexture(url, 'shirt');
     } else {
       setCustomPantsUrl(url);
       setPantsImage(url);
-      applyTextureToModel(url, 'pants');
+      applyTexture(url, 'pants');
     }
   };
 
@@ -368,10 +355,14 @@ export default function ShowcasePage() {
               else if (type === 'head') headMeshRef.current = model;
 
               scene.add(model);
+              console.log('[Showcase] Loaded model:', type);
               resolve(model);
             },
             undefined,
-            reject
+            (err) => {
+              console.error('[Showcase] Failed to load model:', type, err);
+              reject(err);
+            }
           );
         });
       };
@@ -422,26 +413,6 @@ export default function ShowcasePage() {
     };
   }, [initScene]);
 
-  useEffect(() => {
-    if (!sceneInitializedRef.current || !sceneRef.current || !THREEref.current) return;
-
-    const THREE = THREEref.current;
-    
-    const meshes = [torsoMeshRef.current, legsMeshRef.current, handsMeshRef.current, headMeshRef.current];
-    meshes.forEach((mesh) => {
-      if (!mesh) return;
-      mesh.traverse((node: any) => {
-        if (node.isMesh && node.material && node.material.map) {
-          if (lighting === 'none') {
-            node.material = new THREE.MeshBasicMaterial({ map: node.material.map });
-          } else {
-            node.material = new THREE.MeshStandardMaterial({ map: node.material.map });
-          }
-        }
-      });
-    });
-  }, [lighting]);
-
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'shirt' | 'pants') => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -463,10 +434,10 @@ export default function ShowcasePage() {
 
         if (type === 'shirt') {
           setShirtImage(ev.target?.result as string);
-          applyTextureToModel(ev.target?.result as string, 'shirt');
+          applyTexture(ev.target?.result as string, 'shirt');
         } else {
           setPantsImage(ev.target?.result as string);
-          applyTextureToModel(ev.target?.result as string, 'pants');
+          applyTexture(ev.target?.result as string, 'pants');
         }
       };
       img.src = ev.target?.result as string;
@@ -504,9 +475,6 @@ export default function ShowcasePage() {
               <div className="flex items-center gap-2">
                 <User size={16} className="text-primary" />
                 <span className="text-white text-sm">{avatarData.userName}</span>
-                {avatarData.accessories && avatarData.accessories.length > 0 && (
-                  <Package size={14} className="text-green-400 ml-2" />
-                )}
               </div>
             )}
           </div>
@@ -554,7 +522,7 @@ export default function ShowcasePage() {
               <Search size={18} className="text-primary" />
               Fetch Roblox Avatar
             </h3>
-            <p className="text-text-muted text-xs mb-4">Enter a Roblox username to load their clothing and accessories</p>
+            <p className="text-text-muted text-xs mb-4">Enter a Roblox username to load their clothing</p>
             
             <div className="flex gap-2">
               <input
@@ -576,17 +544,11 @@ export default function ShowcasePage() {
 
             {avatarData && (
               <div className="mt-4 p-3 bg-app-bg rounded-lg">
-                <p className="text-white text-sm font-bold mb-2">Avatar Loaded!</p>
-                <div className="space-y-1">
-                  {avatarData.shirtAssetId && (
-                    <p className="text-green-400 text-xs">✓ Shirt loaded</p>
-                  )}
-                  {avatarData.pantsAssetId && (
-                    <p className="text-green-400 text-xs">✓ Pants loaded</p>
-                  )}
-                  {avatarData.accessories && avatarData.accessories.length > 0 && (
-                    <p className="text-green-400 text-xs">✓ {avatarData.accessories.length} accessories loaded</p>
-                  )}
+                <p className="text-white text-sm font-bold mb-2">Loaded!</p>
+                <div className="flex gap-2">
+                  {avatarData.shirtAssetId && <span className="text-green-400 text-xs">✓ Shirt</span>}
+                  {avatarData.pantsAssetId && <span className="text-green-400 text-xs">✓ Pants</span>}
+                  {avatarData.accessories?.length > 0 && <span className="text-green-400 text-xs">✓ {avatarData.accessories.length} accessories</span>}
                 </div>
               </div>
             )}
@@ -597,7 +559,6 @@ export default function ShowcasePage() {
               <Shirt size={18} className="text-primary" />
               Custom Clothing
             </h3>
-            <p className="text-text-muted text-xs mb-4">Override with custom shirt/pant images (replaces fetched)</p>
             
             <div className="space-y-4">
               <div>
@@ -645,7 +606,7 @@ export default function ShowcasePage() {
               <Scissors size={18} className="text-primary" />
               Upload Clothing
             </h3>
-            <p className="text-text-muted text-xs mb-4">Required size: 585x559 pixels (Roblox standard)</p>
+            <p className="text-text-muted text-xs mb-4">Required size: 585x559 pixels</p>
             
             <div className="space-y-4">
               <div>
