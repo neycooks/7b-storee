@@ -23,14 +23,14 @@ interface RobloxAvatar {
 }
 
 const ACCESSORY_POSITIONS: Record<string, { position: [number, number, number]; rotation: [number, number, number]; scale: number }> = {
-  Hat: { position: [0, 0.45, 0], rotation: [0, 0, 0], scale: 0.35 },
-  Hair: { position: [0, 0.42, 0], rotation: [0, 0, 0], scale: 0.35 },
-  FaceAccessory: { position: [0, 0.28, 0.12], rotation: [0, 0, 0], scale: 0.35 },
-  NeckAccessory: { position: [0, 0.18, 0.1], rotation: [0, 0, 0], scale: 0.35 },
-  ShoulderAccessory: { position: [0.22, 0.12, 0], rotation: [0, 0, -0.3], scale: 0.35 },
-  FrontAccessory: { position: [0, 0.1, 0.2], rotation: [0, 0, 0], scale: 0.35 },
-  BackAccessory: { position: [0, 0.1, -0.2], rotation: [0, 3.14159, 0], scale: 0.35 },
-  WaistAccessory: { position: [0, -0.05, 0.1], rotation: [0, 0, 0], scale: 0.35 },
+  Hat: { position: [0, 0.38, 0], rotation: [0, 0, 0], scale: 0.4 },
+  Hair: { position: [0, 0.38, 0], rotation: [0, 0, 0], scale: 0.4 },
+  FaceAccessory: { position: [0, 0.32, 0.08], rotation: [0, 0, 0], scale: 0.35 },
+  NeckAccessory: { position: [0, 0.22, 0.06], rotation: [0, 0, 0], scale: 0.35 },
+  ShoulderAccessory: { position: [0.25, 0.15, 0], rotation: [0, 0, -0.3], scale: 0.35 },
+  FrontAccessory: { position: [0, 0.15, 0.18], rotation: [0, 0, 0], scale: 0.35 },
+  BackAccessory: { position: [0, 0.15, -0.18], rotation: [0, 3.14159, 0], scale: 0.35 },
+  WaistAccessory: { position: [0, 0.02, 0.1], rotation: [0, 0, 0], scale: 0.35 },
 };
 
 export default function ShowcasePage() {
@@ -82,13 +82,13 @@ export default function ShowcasePage() {
       const THREE = await import('three');
       const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
 
-      const modelUrl = `https://assetdelivery.roblox.com/v1/asset/?id=${accessory.id}`;
+      const assetUrl = `/api/roblox-asset?id=${accessory.id}`;
       
       const loader = new GLTFLoader();
       
       return new Promise<any>((resolve, reject) => {
         loader.load(
-          modelUrl,
+          assetUrl,
           (gltf: any) => {
             const model = gltf.scene;
             
@@ -106,17 +106,18 @@ export default function ShowcasePage() {
 
             sceneRef.current.add(model);
             loadedAccessoriesRef.current.push(model);
+            console.log('[Showcase] Loaded accessory:', accessory.assetType, accessory.name);
             resolve(model);
           },
           undefined,
           (error) => {
-            console.warn(`Failed to load accessory ${accessory.id}:`, error);
+            console.error('[Showcase] Failed to load accessory:', accessory.id, accessory.name, error);
             resolve(null);
           }
         );
       });
     } catch (err) {
-      console.warn(`Error loading accessory ${accessory.id}:`, err);
+      console.error('[Showcase] Error loading accessory:', accessory.id, err);
       return null;
     }
   };
@@ -166,9 +167,11 @@ export default function ShowcasePage() {
         throw new Error(data.error || 'Failed to fetch avatar');
       }
 
-      const { userId, userName, shirtAssetId, pantsAssetId, accessories, thumbnailUrl } = data;
+      const { userId, userName, shirtAssetId, pantsAssetId, shirtUrl, pantsUrl, accessories, thumbnailUrl } = data;
 
       const displayName = userName || 'Unknown';
+
+      console.log('[Showcase] Avatar data:', { userId, userName, shirtAssetId, pantsAssetId, accessories: accessories.length });
 
       setAvatarData({
         userId,
@@ -181,16 +184,22 @@ export default function ShowcasePage() {
       });
 
       if (shirtAssetId) {
-        setShirtImage(`https://assetdelivery.roblox.com/v1/asset/?id=${shirtAssetId}`);
+        const shirtUrl = `/api/roblox-image?id=${shirtAssetId}`;
+        console.log('[Showcase] Loading shirt from:', shirtUrl);
+        setShirtImage(shirtUrl);
       }
       if (pantsAssetId) {
-        setPantsImage(`https://assetdelivery.roblox.com/v1/asset/?id=${pantsAssetId}`);
+        const pantsUrl = `/api/roblox-image?id=${pantsAssetId}`;
+        console.log('[Showcase] Loading pants from:', pantsUrl);
+        setPantsImage(pantsUrl);
       }
 
       if (accessories.length > 0) {
         setLoadingAccessories(true);
+        console.log('[Showcase] Loading', accessories.length, 'accessories...');
         
         for (const accessory of accessories) {
+          console.log('[Showcase] Loading accessory:', accessory.assetType, accessory.assetUrl);
           await loadAccessoryModel(accessory);
         }
         

@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
       id: number;
       assetType: string;
       name: string;
+      assetUrl: string;
     }> = [];
 
     if (avatar.assets) {
@@ -56,17 +57,23 @@ export async function POST(req: NextRequest) {
           accessories.push({
             id: asset.id,
             assetType: asset.assetType,
-            name: asset.name
+            name: asset.name,
+            assetUrl: `https://assetdelivery.roblox.com/v1/asset/?id=${asset.id}`
           });
         }
       }
     }
+
+    const shirtUrl = avatar.shirt?.id ? `https://assetdelivery.roblox.com/v1/asset/?id=${avatar.shirt.id}` : null;
+    const pantsUrl = avatar.pants?.id ? `https://assetdelivery.roblox.com/v1/asset/?id=${avatar.pants.id}` : null;
 
     return NextResponse.json({
       userId,
       userName,
       shirtAssetId: avatar.shirt?.id,
       pantsAssetId: avatar.pants?.id,
+      shirtUrl,
+      pantsUrl,
       accessories,
       thumbnailUrl: thumbnail.data?.[0]?.imageUrl || ''
     });
