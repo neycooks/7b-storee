@@ -1,15 +1,15 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Loader2, RotateCcw, Search, User, Shirt, Scissors } from 'lucide-react';
+import { Loader2, RotateCcw, Search, User, Shirt, Scissors, Package } from 'lucide-react';
 
 type LightingPreset = 'none' | 'studio' | 'sunset';
 
-interface RobloxAsset {
+interface RobloxAccessory {
   id: number;
   assetType: string;
   name: string;
-  imageUrl?: string;
+  modelUrl?: string;
 }
 
 interface RobloxAvatar {
@@ -17,10 +17,21 @@ interface RobloxAvatar {
   userName: string;
   headshotImageUrl: string;
   bodyImageUrl: string;
-  shirt?: RobloxAsset;
-  pants?: RobloxAsset;
-  accessories: RobloxAsset[];
+  shirtAssetId?: number;
+  pantsAssetId?: number;
+  accessories: RobloxAccessory[];
 }
+
+const ACCESSORY_POSITIONS: Record<string, { position: [number, number, number]; rotation: [number, number, number]; scale: number }> = {
+  Hat: { position: [0, 0.08, 0], rotation: [0, 0, 0], scale: 0.015 },
+  Hair: { position: [0, 0.06, 0], rotation: [0, 0, 0], scale: 0.015 },
+  FaceAccessory: { position: [0, 0.02, 0.04], rotation: [0, 0, 0], scale: 0.015 },
+  NeckAccessory: { position: [0, -0.03, 0.03], rotation: [0, 0, 0], scale: 0.015 },
+  ShoulderAccessory: { position: [0.04, 0.01, 0], rotation: [0, 0, -0.2], scale: 0.015 },
+  FrontAccessory: { position: [0, 0, 0.05], rotation: [0, 0, 0], scale: 0.015 },
+  BackAccessory: { position: [0, 0, -0.05], rotation: [0, 3.14, 0], scale: 0.015 },
+  WaistAccessory: { position: [0, -0.06, 0.02], rotation: [0, 0, 0], scale: 0.015 },
+};
 
 export default function ShowcasePage() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,7 +48,8 @@ export default function ShowcasePage() {
   const [avatarData, setAvatarData] = useState<RobloxAvatar | null>(null);
   const [customShirtUrl, setCustomShirtUrl] = useState('');
   const [customPantsUrl, setCustomPantsUrl] = useState('');
-  const [accessoryImages, setAccessoryImages] = useState<string[]>([]);
+  const [loadingAccessories, setLoadingAccessories] = useState(false);
+  const [accessoryCount, setAccessoryCount] = useState(0);
 
   const rendererRef = useRef<any>(null);
   const sceneRef = useRef<any>(null);
@@ -47,11 +59,67 @@ export default function ShowcasePage() {
   const legsMeshRef = useRef<any>(null);
   const handsMeshRef = useRef<any>(null);
   const headMeshRef = useRef<any>(null);
-  const accessoriesRef = useRef<any[]>([]);
+  const loadedAccessoriesRef = useRef<any[]>([]);
   const materialsRef = useRef<{ torso: any; legs: any; hands: any; head: any }>({ torso: null, legs: null, hands: null, head: null });
   const loadedRef = useRef(false);
   const animationRef = useRef<number>(0);
   const sceneInitializedRef = useRef(false);
+
+  const clearAccessories = useCallback(() => {
+    loadedAccessoriesRef.current.forEach((acc) => {
+      if (sceneRef.current && acc) {
+        sceneRef.current.remove(acc);
+      }
+    });
+    loadedAccessoriesRef.current = [];
+    setAccessoryCount(0);
+  }, []);
+
+  const loadAccessoryModel = async (accessory: RobloxAccessory) => {
+    if (!sceneRef.current) return;
+
+    try {
+      const THREE = await import('three');
+      const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
+
+      const modelUrl = `https://assetdelivery.roblox.com/v1/asset/?id=${accessory.id}`;
+      
+      const loader = new GLTFLoader();
+      
+      return new Promise<any>((resolve, reject) => {
+        loader.load(
+          modelUrl,
+          (gltf: any) => {
+            const model = gltf.scene;
+            
+            const posData = ACCESSORY_POSITIONS[accessory.assetType] || ACCESSORY_POSITIONS['Hat'];
+            model.position.set(posData.position[0], posData.position[1], posData.position[2]);
+            model.rotation.set(posData.rotation[0], posData.rotation[1], posData.rotation[2]);
+            model.scale.setScalar(posData.scale);
+
+            model.traverse((node: any) => {
+              if (node.isMesh) {
+                node.castShadow = true;
+                node.receiveShadow = true;
+              }
+            });
+
+            sceneRef.current.add(model);
+            loadedAccessoriesRef.current.push(model);
+            resolve(model);
+          },
+          undefined,
+          (error) => {
+            console.warn(`Failed to load accessory ${accessory.id}:`, error);
+            resolve(null);
+          }
+        );
+      });
+    } catch (err) {
+      console.warn(`Error loading accessory ${accessory.id}:`, err);
+      return null;
+    }
+  };
 
   const fetchRobloxAvatar = async () => {
     if (!robloxInput.trim()) {
@@ -61,6 +129,7 @@ export default function ShowcasePage() {
 
     setFetchingAvatar(true);
     setError(null);
+    clearAccessories();
 
     try {
       let userId: number = 0;
@@ -111,77 +180,20 @@ export default function ShowcasePage() {
         throw new Error('Failed to fetch avatar data');
       }
 
-      const accessories: RobloxAsset[] = [];
+      const accessories: RobloxAccessory[] = [];
       if (avatar.assets) {
         for (const asset of avatar.assets) {
           if (asset.assetType === 'Hat' || asset.assetType === 'Hair' || 
               asset.assetType === 'FaceAccessory' || asset.assetType === 'NeckAccessory' ||
               asset.assetType === 'ShoulderAccessory' || asset.assetType === 'FrontAccessory' ||
               asset.assetType === 'BackAccessory' || asset.assetType === 'WaistAccessory') {
-            try {
-              const thumb = await fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${asset.id}&size=512x512&format=Png&isCircular=false`);
-              const thumbData = await thumb.json();
-              accessories.push({
-                id: asset.id,
-                assetType: asset.assetType,
-                name: asset.name,
-                imageUrl: thumbData.data?.[0]?.imageUrl
-              });
-            } catch (e) {
-              accessories.push({
-                id: asset.id,
-                assetType: asset.assetType,
-                name: asset.name
-              });
-            }
+            accessories.push({
+              id: asset.id,
+              assetType: asset.assetType,
+              name: asset.name,
+              modelUrl: `https://assetdelivery.roblox.com/v1/asset/?id=${asset.id}`
+            });
           }
-        }
-      }
-
-      let shirtAsset: RobloxAsset | undefined;
-      let pantsAsset: RobloxAsset | undefined;
-      let shirtTextureUrl: string | null = null;
-      let pantsTextureUrl: string | null = null;
-
-      if (avatar.shirt) {
-        try {
-          const thumb = await fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${avatar.shirt.id}&size=512x512&format=Png&isCircular=false`);
-          const thumbData = await thumb.json();
-          shirtAsset = {
-            id: avatar.shirt.id,
-            assetType: 'Shirt',
-            name: avatar.shirt.name,
-            imageUrl: thumbData.data?.[0]?.imageUrl
-          };
-          shirtTextureUrl = `https://assetdelivery.roblox.com/v1/asset/?id=${avatar.shirt.id}`;
-        } catch (e) {
-          shirtAsset = {
-            id: avatar.shirt.id,
-            assetType: 'Shirt',
-            name: avatar.shirt.name
-          };
-          shirtTextureUrl = `https://assetdelivery.roblox.com/v1/asset/?id=${avatar.shirt.id}`;
-        }
-      }
-
-      if (avatar.pants) {
-        try {
-          const thumb = await fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${avatar.pants.id}&size=512x512&format=Png&isCircular=false`);
-          const thumbData = await thumb.json();
-          pantsAsset = {
-            id: avatar.pants.id,
-            assetType: 'Pants',
-            name: avatar.pants.name,
-            imageUrl: thumbData.data?.[0]?.imageUrl
-          };
-          pantsTextureUrl = `https://assetdelivery.roblox.com/v1/asset/?id=${avatar.pants.id}`;
-        } catch (e) {
-          pantsAsset = {
-            id: avatar.pants.id,
-            assetType: 'Pants',
-            name: avatar.pants.name
-          };
-          pantsTextureUrl = `https://assetdelivery.roblox.com/v1/asset/?id=${avatar.pants.id}`;
         }
       }
 
@@ -192,20 +204,28 @@ export default function ShowcasePage() {
         userName: displayName,
         bodyImageUrl: thumbnail.data?.[0]?.imageUrl || '',
         headshotImageUrl: thumbnail.data?.[0]?.imageUrl || '',
-        shirt: shirtAsset,
-        pants: pantsAsset,
+        shirtAssetId: avatar.shirt?.id,
+        pantsAssetId: avatar.pants?.id,
         accessories
       });
 
-      if (shirtTextureUrl) {
-        setShirtImage(shirtTextureUrl);
+      if (avatar.shirt?.id) {
+        setShirtImage(`https://assetdelivery.roblox.com/v1/asset/?id=${avatar.shirt.id}`);
       }
-      if (pantsTextureUrl) {
-        setPantsImage(pantsTextureUrl);
+      if (avatar.pants?.id) {
+        setPantsImage(`https://assetdelivery.roblox.com/v1/asset/?id=${avatar.pants.id}`);
       }
 
-      const accessoryUrls = accessories.map(a => a.imageUrl).filter(Boolean) as string[];
-      setAccessoryImages(accessoryUrls);
+      if (accessories.length > 0) {
+        setLoadingAccessories(true);
+        
+        for (const accessory of accessories) {
+          await loadAccessoryModel(accessory);
+        }
+        
+        setLoadingAccessories(false);
+        setAccessoryCount(accessories.length);
+      }
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch Roblox avatar');
@@ -513,9 +533,9 @@ export default function ShowcasePage() {
     setCustomShirtUrl('');
     setCustomPantsUrl('');
     setAvatarData(null);
-    setAccessoryImages([]);
     setRobloxInput('');
     setError(null);
+    clearAccessories();
     window.location.reload();
   };
 
@@ -533,12 +553,26 @@ export default function ShowcasePage() {
         <div className="bg-card-bg rounded-xl p-3 md:p-4">
           <div className="flex justify-between items-center mb-3 md:mb-4">
             <h2 className="text-white font-bold text-lg">3D Preview</h2>
-            {avatarData && (
-              <div className="flex items-center gap-2">
-                <User size={16} className="text-primary" />
-                <span className="text-white text-sm">{avatarData.userName}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {avatarData && (
+                <div className="flex items-center gap-2">
+                  <User size={16} className="text-primary" />
+                  <span className="text-white text-sm">{avatarData.userName}</span>
+                </div>
+              )}
+              {loadingAccessories && (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="animate-spin text-primary" size={16} />
+                  <span className="text-white text-xs">Loading accessories...</span>
+                </div>
+              )}
+              {!loadingAccessories && accessoryCount > 0 && (
+                <div className="flex items-center gap-1">
+                  <Package size={14} className="text-green-400" />
+                  <span className="text-green-400 text-xs">{accessoryCount} accessories</span>
+                </div>
+              )}
+            </div>
           </div>
 
           <div 
@@ -584,7 +618,7 @@ export default function ShowcasePage() {
               <Search size={18} className="text-primary" />
               Fetch Roblox Avatar
             </h3>
-            <p className="text-text-muted text-xs mb-4">Enter a Roblox username or profile URL to load their avatar</p>
+            <p className="text-text-muted text-xs mb-4">Enter a Roblox username or profile URL to load their avatar with accessories</p>
             
             <div className="flex gap-2">
               <input
@@ -607,15 +641,17 @@ export default function ShowcasePage() {
             {avatarData && (
               <div className="mt-4 p-3 bg-app-bg rounded-lg">
                 <p className="text-white text-sm font-bold mb-2">Avatar Loaded!</p>
-                {avatarData.shirt && (
-                  <p className="text-text-muted text-xs">Shirt: {avatarData.shirt.name}</p>
-                )}
-                {avatarData.pants && (
-                  <p className="text-text-muted text-xs">Pants: {avatarData.pants.name}</p>
-                )}
-                {avatarData.accessories.length > 0 && (
-                  <p className="text-text-muted text-xs">Accessories: {avatarData.accessories.length}</p>
-                )}
+                <div className="space-y-1">
+                  {avatarData.shirtAssetId && (
+                    <p className="text-text-muted text-xs">Shirt ID: {avatarData.shirtAssetId}</p>
+                  )}
+                  {avatarData.pantsAssetId && (
+                    <p className="text-text-muted text-xs">Pants ID: {avatarData.pantsAssetId}</p>
+                  )}
+                  {avatarData.accessories.length > 0 && (
+                    <p className="text-text-muted text-xs">Accessories: {avatarData.accessories.length} items loaded on 3D model</p>
+                  )}
+                </div>
               </div>
             )}
           </div>
