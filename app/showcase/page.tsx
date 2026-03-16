@@ -23,14 +23,14 @@ interface RobloxAvatar {
 }
 
 const ACCESSORY_POSITIONS: Record<string, { position: [number, number, number]; rotation: [number, number, number]; scale: number }> = {
-  Hat: { position: [0, 0.08, 0], rotation: [0, 0, 0], scale: 0.015 },
-  Hair: { position: [0, 0.06, 0], rotation: [0, 0, 0], scale: 0.015 },
-  FaceAccessory: { position: [0, 0.02, 0.04], rotation: [0, 0, 0], scale: 0.015 },
-  NeckAccessory: { position: [0, -0.03, 0.03], rotation: [0, 0, 0], scale: 0.015 },
-  ShoulderAccessory: { position: [0.04, 0.01, 0], rotation: [0, 0, -0.2], scale: 0.015 },
-  FrontAccessory: { position: [0, 0, 0.05], rotation: [0, 0, 0], scale: 0.015 },
-  BackAccessory: { position: [0, 0, -0.05], rotation: [0, 3.14, 0], scale: 0.015 },
-  WaistAccessory: { position: [0, -0.06, 0.02], rotation: [0, 0, 0], scale: 0.015 },
+  Hat: { position: [0, 0.45, 0], rotation: [0, 0, 0], scale: 0.35 },
+  Hair: { position: [0, 0.42, 0], rotation: [0, 0, 0], scale: 0.35 },
+  FaceAccessory: { position: [0, 0.28, 0.12], rotation: [0, 0, 0], scale: 0.35 },
+  NeckAccessory: { position: [0, 0.18, 0.1], rotation: [0, 0, 0], scale: 0.35 },
+  ShoulderAccessory: { position: [0.22, 0.12, 0], rotation: [0, 0, -0.3], scale: 0.35 },
+  FrontAccessory: { position: [0, 0.1, 0.2], rotation: [0, 0, 0], scale: 0.35 },
+  BackAccessory: { position: [0, 0.1, -0.2], rotation: [0, 3.14159, 0], scale: 0.35 },
+  WaistAccessory: { position: [0, -0.05, 0.1], rotation: [0, 0, 0], scale: 0.35 },
 };
 
 export default function ShowcasePage() {
@@ -132,88 +132,62 @@ export default function ShowcasePage() {
     clearAccessories();
 
     try {
-      let userId: number = 0;
-      let userName: string = '';
-
-      const urlOrUsername = robloxInput.trim();
+      let username = robloxInput.trim();
       
-      if (urlOrUsername.includes('roblox.com')) {
-        const match = urlOrUsername.match(/(?:users?|profile)\/(\d+)/);
+      if (username.includes('roblox.com')) {
+        const match = username.match(/(?:users?|profile)\/(\d+)/);
         if (match) {
-          userId = parseInt(match[1]);
+          const userId = match[1];
+          const userRes = await fetch(`https://users.roblox.com/v1/users/${userId}`);
+          const userData = await userRes.json();
+          if (userData.name) {
+            username = userData.name;
+          } else {
+            throw new Error('Invalid Roblox URL');
+          }
         } else {
-          const usernameFromUrl = urlOrUsername.split('roblox.com/')[1]?.split('/')[0]?.replace(/-/g, ' ');
+          const usernameFromUrl = username.split('roblox.com/')[1]?.split('/')[0]?.replace(/-/g, ' ');
           if (!usernameFromUrl) {
             throw new Error('Invalid Roblox URL');
           }
-          const searchRes = await fetch(`https://users.roblox.com/v1/users/search?keyword=${encodeURIComponent(usernameFromUrl)}&limit=10`);
-          const searchData = await searchRes.json();
-          if (!searchData.data || searchData.data.length === 0) {
-            throw new Error('User not found');
-          }
-          userId = searchData.data[0].id;
-          userName = searchData.data[0].name;
+          username = usernameFromUrl;
         }
-      } else {
-        const searchRes = await fetch(`https://users.roblox.com/v1/users/search?keyword=${encodeURIComponent(urlOrUsername)}&limit=10`);
-        const searchData = await searchRes.json();
-        if (!searchData.data || searchData.data.length === 0) {
-          throw new Error('User not found');
-        }
-        userId = searchData.data[0].id;
-        userName = searchData.data[0].name;
       }
 
-      if (!userId) {
-        throw new Error('Could not resolve user ID');
+      const res = await fetch('/api/roblox-avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to fetch avatar');
       }
 
-      const [avatarRes, thumbRes] = await Promise.all([
-        fetch(`https://avatar.roblox.com/v1/users/${userId}/avatar`),
-        fetch(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=352x352&format=Png&isCircular=false`)
-      ]);
+      const { userId, userName, shirtAssetId, pantsAssetId, accessories } = data;
 
-      const avatar = await avatarRes.json();
+      const thumbRes = await fetch(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=352x352&format=Png&isCircular=false`);
       const thumbnail = await thumbRes.json();
 
-      if (!avatar || avatar.errors) {
-        throw new Error('Failed to fetch avatar data');
-      }
-
-      const accessories: RobloxAccessory[] = [];
-      if (avatar.assets) {
-        for (const asset of avatar.assets) {
-          if (asset.assetType === 'Hat' || asset.assetType === 'Hair' || 
-              asset.assetType === 'FaceAccessory' || asset.assetType === 'NeckAccessory' ||
-              asset.assetType === 'ShoulderAccessory' || asset.assetType === 'FrontAccessory' ||
-              asset.assetType === 'BackAccessory' || asset.assetType === 'WaistAccessory') {
-            accessories.push({
-              id: asset.id,
-              assetType: asset.assetType,
-              name: asset.name,
-              modelUrl: `https://assetdelivery.roblox.com/v1/asset/?id=${asset.id}`
-            });
-          }
-        }
-      }
-
-      const displayName = userName || avatar.name || 'Unknown';
+      const displayName = userName || 'Unknown';
 
       setAvatarData({
         userId,
         userName: displayName,
         bodyImageUrl: thumbnail.data?.[0]?.imageUrl || '',
         headshotImageUrl: thumbnail.data?.[0]?.imageUrl || '',
-        shirtAssetId: avatar.shirt?.id,
-        pantsAssetId: avatar.pants?.id,
+        shirtAssetId,
+        pantsAssetId,
         accessories
       });
 
-      if (avatar.shirt?.id) {
-        setShirtImage(`https://assetdelivery.roblox.com/v1/asset/?id=${avatar.shirt.id}`);
+      if (shirtAssetId) {
+        setShirtImage(`https://assetdelivery.roblox.com/v1/asset/?id=${shirtAssetId}`);
       }
-      if (avatar.pants?.id) {
-        setPantsImage(`https://assetdelivery.roblox.com/v1/asset/?id=${avatar.pants.id}`);
+      if (pantsAssetId) {
+        setPantsImage(`https://assetdelivery.roblox.com/v1/asset/?id=${pantsAssetId}`);
       }
 
       if (accessories.length > 0) {
