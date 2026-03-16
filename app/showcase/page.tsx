@@ -166,18 +166,15 @@ export default function ShowcasePage() {
         throw new Error(data.error || 'Failed to fetch avatar');
       }
 
-      const { userId, userName, shirtAssetId, pantsAssetId, accessories } = data;
-
-      const thumbRes = await fetch(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=352x352&format=Png&isCircular=false`);
-      const thumbnail = await thumbRes.json();
+      const { userId, userName, shirtAssetId, pantsAssetId, accessories, thumbnailUrl } = data;
 
       const displayName = userName || 'Unknown';
 
       setAvatarData({
         userId,
         userName: displayName,
-        bodyImageUrl: thumbnail.data?.[0]?.imageUrl || '',
-        headshotImageUrl: thumbnail.data?.[0]?.imageUrl || '',
+        bodyImageUrl: thumbnailUrl || '',
+        headshotImageUrl: thumbnailUrl || '',
         shirtAssetId,
         pantsAssetId,
         accessories

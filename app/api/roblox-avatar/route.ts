@@ -29,8 +29,13 @@ export async function POST(req: NextRequest) {
     const userId = searchData.data[0].id;
     const userName = searchData.data[0].name;
 
-    const avatarRes = await fetch(`https://avatar.roblox.com/v1/users/${userId}/avatar`, { headers });
+    const [avatarRes, thumbRes] = await Promise.all([
+      fetch(`https://avatar.roblox.com/v1/users/${userId}/avatar`, { headers }),
+      fetch(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=352x352&format=Png&isCircular=false`, { headers })
+    ]);
+
     const avatar = await avatarRes.json();
+    const thumbnail = await thumbRes.json();
 
     if (!avatar || avatar.errors) {
       return NextResponse.json({ error: 'Failed to fetch avatar' }, { status: 500 });
@@ -62,7 +67,8 @@ export async function POST(req: NextRequest) {
       userName,
       shirtAssetId: avatar.shirt?.id,
       pantsAssetId: avatar.pants?.id,
-      accessories
+      accessories,
+      thumbnailUrl: thumbnail.data?.[0]?.imageUrl || ''
     });
   } catch (error) {
     console.error('[Roblox API] Error:', error);
