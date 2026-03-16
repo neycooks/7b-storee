@@ -1,9 +1,26 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Loader2, RotateCcw } from 'lucide-react';
+import { Loader2, RotateCcw, Search, User, Shirt, Scissors } from 'lucide-react';
 
 type LightingPreset = 'none' | 'studio' | 'sunset';
+
+interface RobloxAsset {
+  id: number;
+  assetType: string;
+  name: string;
+  imageUrl?: string;
+}
+
+interface RobloxAvatar {
+  userId: number;
+  userName: string;
+  headshotImageUrl: string;
+  bodyImageUrl: string;
+  shirt?: RobloxAsset;
+  pants?: RobloxAsset;
+  accessories: RobloxAsset[];
+}
 
 export default function ShowcasePage() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -14,6 +31,13 @@ export default function ShowcasePage() {
   const [pantsImage, setPantsImage] = useState<string | null>(null);
   const [lighting, setLighting] = useState<LightingPreset>('studio');
   const [error, setError] = useState<string | null>(null);
+  
+  const [robloxInput, setRobloxInput] = useState('');
+  const [fetchingAvatar, setFetchingAvatar] = useState(false);
+  const [avatarData, setAvatarData] = useState<RobloxAvatar | null>(null);
+  const [customShirtUrl, setCustomShirtUrl] = useState('');
+  const [customPantsUrl, setCustomPantsUrl] = useState('');
+  const [accessoryImages, setAccessoryImages] = useState<string[]>([]);
 
   const rendererRef = useRef<any>(null);
   const sceneRef = useRef<any>(null);
@@ -23,10 +47,172 @@ export default function ShowcasePage() {
   const legsMeshRef = useRef<any>(null);
   const handsMeshRef = useRef<any>(null);
   const headMeshRef = useRef<any>(null);
+  const accessoriesRef = useRef<any[]>([]);
   const materialsRef = useRef<{ torso: any; legs: any; hands: any; head: any }>({ torso: null, legs: null, hands: null, head: null });
   const loadedRef = useRef(false);
   const animationRef = useRef<number>(0);
   const sceneInitializedRef = useRef(false);
+
+  const fetchRobloxAvatar = async () => {
+    if (!robloxInput.trim()) {
+      setError('Please enter a Roblox username or profile URL');
+      return;
+    }
+
+    setFetchingAvatar(true);
+    setError(null);
+
+    try {
+      let userId: number;
+      let userName: string;
+
+      const urlOrUsername = robloxInput.trim();
+      
+      if (urlOrUsername.includes('roblox.com')) {
+        const match = urlOrUsername.match(/(?:users?|profile)\/(\d+)/);
+        if (match) {
+          userId = parseInt(match[1]);
+        } else {
+          const usernameFromUrl = urlOrUsername.split('roblox.com/')[1]?.split('/')[0]?.replace(/-/g, ' ');
+          if (!usernameFromUrl) {
+            throw new Error('Invalid Roblox URL');
+          }
+          const searchRes = await fetch(`https://users.roblox.com/v1/users/search?keyword=${encodeURIComponent(usernameFromUrl)}&limit=10`);
+          const searchData = await searchRes.json();
+          if (!searchData.data || searchData.data.length === 0) {
+            throw new Error('User not found');
+          }
+          userId = searchData.data[0].id;
+          userName = searchData.data[0].name;
+        }
+      } else {
+        const searchRes = await fetch(`https://users.roblox.com/v1/users/search?keyword=${encodeURIComponent(urlOrUsername)}&limit=10`);
+        const searchData = await searchRes.json();
+        if (!searchData.data || searchData.data.length === 0) {
+          throw new Error('User not found');
+        }
+        userId = searchData.data[0].id;
+        userName = searchData.data[0].name;
+      }
+
+      const [avatarRes, thumbRes] = await Promise.all([
+        fetch(`https://avatar.roblox.com/v1/users/${userId}/avatar`),
+        fetch(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=352x352&format=Png&isCircular=false`)
+      ]);
+
+      const avatar = await avatarRes.json();
+      const thumbnail = await thumbRes.json();
+
+      if (!avatar || avatar.errors) {
+        throw new Error('Failed to fetch avatar data');
+      }
+
+      const accessories: RobloxAsset[] = [];
+      if (avatar.assets) {
+        for (const asset of avatar.assets) {
+          if (asset.assetType === 'Hat' || asset.assetType === 'Hair' || 
+              asset.assetType === 'FaceAccessory' || asset.assetType === 'NeckAccessory' ||
+              asset.assetType === 'ShoulderAccessory' || asset.assetType === 'FrontAccessory' ||
+              asset.assetType === 'BackAccessory' || asset.assetType === 'WaistAccessory') {
+            try {
+              const thumb = await fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${asset.id}&size=512x512&format=Png&isCircular=false`);
+              const thumbData = await thumb.json();
+              accessories.push({
+                id: asset.id,
+                assetType: asset.assetType,
+                name: asset.name,
+                imageUrl: thumbData.data?.[0]?.imageUrl
+              });
+            } catch (e) {
+              accessories.push({
+                id: asset.id,
+                assetType: asset.assetType,
+                name: asset.name
+              });
+            }
+          }
+        }
+      }
+
+      let shirtAsset: RobloxAsset | undefined;
+      let pantsAsset: RobloxAsset | undefined;
+
+      if (avatar.shirt) {
+        try {
+          const thumb = await fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${avatar.shirt.id}&size=512x512&format=Png&isCircular=false`);
+          const thumbData = await thumb.json();
+          shirtAsset = {
+            id: avatar.shirt.id,
+            assetType: 'Shirt',
+            name: avatar.shirt.name,
+            imageUrl: thumbData.data?.[0]?.imageUrl
+          };
+        } catch (e) {
+          shirtAsset = {
+            id: avatar.shirt.id,
+            assetType: 'Shirt',
+            name: avatar.shirt.name
+          };
+        }
+      }
+
+      if (avatar.pants) {
+        try {
+          const thumb = await fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${avatar.pants.id}&size=512x512&format=Png&isCircular=false`);
+          const thumbData = await thumb.json();
+          pantsAsset = {
+            id: avatar.pants.id,
+            assetType: 'Pants',
+            name: avatar.pants.name,
+            imageUrl: thumbData.data?.[0]?.imageUrl
+          };
+        } catch (e) {
+          pantsAsset = {
+            id: avatar.pants.id,
+            assetType: 'Pants',
+            name: avatar.pants.name
+          };
+        }
+      }
+
+      setAvatarData({
+        userId,
+        userName: userName || avatar.name || 'Unknown',
+        bodyImageUrl: thumbnail.data?.[0]?.imageUrl || '',
+        headshotImageUrl: thumbnail.data?.[0]?.imageUrl || '',
+        shirt: shirtAsset,
+        pants: pantsAsset,
+        accessories
+      });
+
+      if (shirtAsset?.imageUrl) {
+        setShirtImage(shirtAsset.imageUrl);
+      }
+      if (pantsAsset?.imageUrl) {
+        setPantsImage(pantsAsset.imageUrl);
+      }
+
+      const accessoryUrls = accessories.map(a => a.imageUrl).filter(Boolean) as string[];
+      setAccessoryImages(accessoryUrls);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch Roblox avatar');
+    } finally {
+      setFetchingAvatar(false);
+    }
+  };
+
+  const applyCustomClothing = (type: 'shirt' | 'pants', url: string) => {
+    if (!url.trim()) return;
+    
+    if (type === 'shirt') {
+      setCustomShirtUrl(url);
+      setShirtImage(url);
+    } else {
+      setCustomPantsUrl(url);
+      setPantsImage(url);
+    }
+  };
 
   const initScene = useCallback(async () => {
     if (typeof window === 'undefined' || !containerRef.current || !canvasRef.current || loadedRef.current) return;
@@ -267,6 +453,18 @@ export default function ShowcasePage() {
     }
   };
 
+  useEffect(() => {
+    if (shirtImage) {
+      applyTexture(shirtImage, 'shirt');
+    }
+  }, [shirtImage]);
+
+  useEffect(() => {
+    if (pantsImage) {
+      applyTexture(pantsImage, 'pants');
+    }
+  }, [pantsImage]);
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'shirt' | 'pants') => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -288,10 +486,8 @@ export default function ShowcasePage() {
 
         if (type === 'shirt') {
           setShirtImage(ev.target?.result as string);
-          applyTexture(ev.target?.result as string, 'shirt');
         } else {
           setPantsImage(ev.target?.result as string);
-          applyTexture(ev.target?.result as string, 'pants');
         }
       };
       img.src = ev.target?.result as string;
@@ -302,6 +498,11 @@ export default function ShowcasePage() {
   const handleReset = () => {
     setShirtImage(null);
     setPantsImage(null);
+    setCustomShirtUrl('');
+    setCustomPantsUrl('');
+    setAvatarData(null);
+    setAccessoryImages([]);
+    setRobloxInput('');
     setError(null);
     window.location.reload();
   };
@@ -320,6 +521,12 @@ export default function ShowcasePage() {
         <div className="bg-card-bg rounded-xl p-3 md:p-4">
           <div className="flex justify-between items-center mb-3 md:mb-4">
             <h2 className="text-white font-bold text-lg">3D Preview</h2>
+            {avatarData && (
+              <div className="flex items-center gap-2">
+                <User size={16} className="text-primary" />
+                <span className="text-white text-sm">{avatarData.userName}</span>
+              </div>
+            )}
           </div>
 
           <div 
@@ -361,7 +568,99 @@ export default function ShowcasePage() {
 
         <div className="space-y-4">
           <div className="bg-card-bg rounded-xl p-4">
-            <h3 className="text-white font-bold mb-3">Upload Clothing</h3>
+            <h3 className="text-white font-bold mb-3 flex items-center gap-2">
+              <Search size={18} className="text-primary" />
+              Fetch Roblox Avatar
+            </h3>
+            <p className="text-text-muted text-xs mb-4">Enter a Roblox username or profile URL to load their avatar</p>
+            
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Username or Roblox URL"
+                value={robloxInput}
+                onChange={(e) => setRobloxInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && fetchRobloxAvatar()}
+                className="flex-1 bg-app-bg border border-border rounded-lg px-4 py-3 text-white text-sm placeholder-text-muted"
+              />
+              <button
+                onClick={fetchRobloxAvatar}
+                disabled={fetchingAvatar}
+                className="px-6 py-3 bg-primary text-black rounded-lg font-bold text-sm hover:opacity-90 transition disabled:opacity-50"
+              >
+                {fetchingAvatar ? <Loader2 className="animate-spin" size={20} /> : 'Fetch'}
+              </button>
+            </div>
+
+            {avatarData && (
+              <div className="mt-4 p-3 bg-app-bg rounded-lg">
+                <p className="text-white text-sm font-bold mb-2">Avatar Loaded!</p>
+                {avatarData.shirt && (
+                  <p className="text-text-muted text-xs">Shirt: {avatarData.shirt.name}</p>
+                )}
+                {avatarData.pants && (
+                  <p className="text-text-muted text-xs">Pants: {avatarData.pants.name}</p>
+                )}
+                {avatarData.accessories.length > 0 && (
+                  <p className="text-text-muted text-xs">Accessories: {avatarData.accessories.length}</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-card-bg rounded-xl p-4">
+            <h3 className="text-white font-bold mb-3 flex items-center gap-2">
+              <Shirt size={18} className="text-primary" />
+              Custom Clothing
+            </h3>
+            <p className="text-text-muted text-xs mb-4">Override with custom shirt/pant images</p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-text-muted text-sm block mb-2">Custom Shirt URL</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="https://example.com/shirt.png"
+                    value={customShirtUrl}
+                    onChange={(e) => setCustomShirtUrl(e.target.value)}
+                    className="flex-1 bg-app-bg border border-border rounded-lg px-3 py-2 text-white text-sm placeholder-text-muted"
+                  />
+                  <button
+                    onClick={() => applyCustomClothing('shirt', customShirtUrl)}
+                    className="px-4 py-2 bg-primary text-black rounded-lg font-bold text-sm"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-text-muted text-sm block mb-2">Custom Pants URL</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="https://example.com/pants.png"
+                    value={customPantsUrl}
+                    onChange={(e) => setCustomPantsUrl(e.target.value)}
+                    className="flex-1 bg-app-bg border border-border rounded-lg px-3 py-2 text-white text-sm placeholder-text-muted"
+                  />
+                  <button
+                    onClick={() => applyCustomClothing('pants', customPantsUrl)}
+                    className="px-4 py-2 bg-primary text-black rounded-lg font-bold text-sm"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-card-bg rounded-xl p-4">
+            <h3 className="text-white font-bold mb-3 flex items-center gap-2">
+              <Scissors size={18} className="text-primary" />
+              Upload Clothing
+            </h3>
             <p className="text-text-muted text-xs mb-4">Required size: 585x559 pixels (Roblox standard)</p>
             
             <div className="space-y-4">
@@ -376,7 +675,7 @@ export default function ShowcasePage() {
                 {shirtImage && (
                   <div className="mt-3 flex items-center gap-3">
                     <img src={shirtImage} alt="Shirt" className="w-16 h-16 object-cover rounded border border-border" />
-                    <button onClick={() => { setShirtImage(null); applyTexture('/dripzels/models/textures/baseShirt.png', 'shirt'); }} className="text-red-400 text-sm hover:text-red-300">Remove</button>
+                    <button onClick={() => { setShirtImage(null); setCustomShirtUrl(''); }} className="text-red-400 text-sm hover:text-red-300">Remove</button>
                   </div>
                 )}
               </div>
@@ -392,7 +691,7 @@ export default function ShowcasePage() {
                 {pantsImage && (
                   <div className="mt-3 flex items-center gap-3">
                     <img src={pantsImage} alt="Pants" className="w-16 h-16 object-cover rounded border border-border" />
-                    <button onClick={() => { setPantsImage(null); applyTexture('/dripzels/models/textures/basePants.png', 'pants'); }} className="text-red-400 text-sm hover:text-red-300">Remove</button>
+                    <button onClick={() => { setPantsImage(null); setCustomPantsUrl(''); }} className="text-red-400 text-sm hover:text-red-300">Remove</button>
                   </div>
                 )}
               </div>

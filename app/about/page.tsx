@@ -78,9 +78,13 @@ interface Ranking {
   username: string;
   icon_url: string | null;
   thumbnail_url: string | null;
-  rank: number;
+  rank: string;
+  category: string;
   created_at: string;
 }
+
+const RANK_OPTIONS = ['Beginner', 'AMT', 'NOR', 'INT', 'ADV', 'PRO', 'ELT'];
+const CATEGORY_OPTIONS = ['CLOTHING', 'KITS', 'SHIRTS', 'GFX', 'BUILDINGS', 'EDITS', 'ARTS', 'UGCS', 'MODELING'];
 
 export default function About() {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -116,7 +120,7 @@ export default function About() {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [orderChanged, setOrderChanged] = useState(false);
   const [rankings, setRankings] = useState<Ranking[]>([]);
-  const [newRanking, setNewRanking] = useState({ name: '', username: '', iconUrl: '', thumbnailUrl: '' });
+  const [newRanking, setNewRanking] = useState({ name: '', username: '', iconUrl: '', thumbnailUrl: '', rank: 'Beginner', category: 'CLOTHING' });
   const [editingRanking, setEditingRanking] = useState<Ranking | null>(null);
   const [rankingDragIdx, setRankingDragIdx] = useState<number | null>(null);
   const [rankingDragOverIdx, setRankingDragOverIdx] = useState<number | null>(null);
@@ -289,10 +293,12 @@ export default function About() {
         username: newRanking.username,
         icon_url: newRanking.iconUrl,
         thumbnail_url: newRanking.thumbnailUrl,
+        rank: newRanking.rank,
+        category: newRanking.category,
       }),
     });
     if (res.ok) {
-      setNewRanking({ name: '', username: '', iconUrl: '', thumbnailUrl: '' });
+      setNewRanking({ name: '', username: '', iconUrl: '', thumbnailUrl: '', rank: 'Beginner', category: 'CLOTHING' });
       setShowCreateForm(false);
       fetchRankings();
     }
@@ -337,7 +343,7 @@ export default function About() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: rankings.map((r, i) => ({ id: r.id, rank: i + 1 }))
+          items: rankings.map((r) => ({ id: r.id, rank: r.rank, category: r.category }))
         })
       });
       if (res.ok) {
@@ -857,6 +863,12 @@ export default function About() {
                       <input type="text" placeholder="Username" value={newRanking.username} onChange={e => setNewRanking({...newRanking, username: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
                       <input type="text" placeholder="Icon URL" value={newRanking.iconUrl} onChange={e => setNewRanking({...newRanking, iconUrl: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
                       <input type="text" placeholder="Thumbnail URL" value={newRanking.thumbnailUrl} onChange={e => setNewRanking({...newRanking, thumbnailUrl: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm" />
+                      <select value={newRanking.rank} onChange={e => setNewRanking({...newRanking, rank: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm">
+                        {RANK_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                      <select value={newRanking.category} onChange={e => setNewRanking({...newRanking, category: e.target.value})} className="bg-card-bg border border-border rounded-lg px-3 py-2 text-white text-sm">
+                        {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
                     </div>
                     <div className="flex gap-2 mt-3">
                       <button onClick={handleCreateRanking} className="px-4 py-2 bg-primary text-black rounded-lg font-bold text-sm">Add</button>
@@ -882,6 +894,10 @@ export default function About() {
                       <div className="flex-1">
                         <p className="text-white font-bold">{item.name}</p>
                         <p className="text-text-muted text-sm">@{item.username}</p>
+                        <div className="flex gap-2 mt-1">
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold text-white ${item.category !== 'CLOTHING' ? (item.category === 'GFX' ? 'bg-pink-500' : item.category === 'BUILDINGS' ? 'bg-amber-500' : 'bg-blue-500') : 'bg-blue-500'}`}>{item.category}</span>
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold text-white ${item.rank === 'ELT' ? 'bg-red-500' : item.rank === 'PRO' ? 'bg-yellow-500' : item.rank === 'ADV' ? 'bg-purple-500' : item.rank === 'INT' ? 'bg-green-500' : item.rank === 'NOR' ? 'bg-blue-500' : 'bg-gray-500'}`}>{item.rank}</span>
+                        </div>
                       </div>
                       <button onClick={() => handleDeleteRanking(item.id)} className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white text-sm">✕</button>
                     </div>
