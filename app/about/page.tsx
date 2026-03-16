@@ -852,7 +852,7 @@ export default function About() {
             {activeTab === 'rankings' && (
               <div className="p-6">
                 <div className="flex gap-4 mb-4">
-                  <button onClick={() => { setShowCreateForm(true); setEditingRanking(null); setNewRanking({ name: '', username: '', iconUrl: '', thumbnailUrl: '' }); }} className="px-6 py-3 bg-primary text-black rounded-xl font-bold hover:opacity-90 transition">+ Add Ranking</button>
+                  <button onClick={() => { setShowCreateForm(true); setEditingRanking(null); setNewRanking({ name: '', username: '', iconUrl: '', thumbnailUrl: '', rank: 'Beginner', category: 'CLOTHING' }); }} className="px-6 py-3 bg-primary text-black rounded-xl font-bold hover:opacity-90 transition">+ Add Ranking</button>
                 </div>
 
                 {showCreateForm && (

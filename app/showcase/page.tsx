@@ -63,8 +63,8 @@ export default function ShowcasePage() {
     setError(null);
 
     try {
-      let userId: number;
-      let userName: string;
+      let userId: number = 0;
+      let userName: string = '';
 
       const urlOrUsername = robloxInput.trim();
       
@@ -93,6 +93,10 @@ export default function ShowcasePage() {
         }
         userId = searchData.data[0].id;
         userName = searchData.data[0].name;
+      }
+
+      if (!userId) {
+        throw new Error('Could not resolve user ID');
       }
 
       const [avatarRes, thumbRes] = await Promise.all([
@@ -136,6 +140,8 @@ export default function ShowcasePage() {
 
       let shirtAsset: RobloxAsset | undefined;
       let pantsAsset: RobloxAsset | undefined;
+      let shirtTextureUrl: string | null = null;
+      let pantsTextureUrl: string | null = null;
 
       if (avatar.shirt) {
         try {
@@ -147,12 +153,14 @@ export default function ShowcasePage() {
             name: avatar.shirt.name,
             imageUrl: thumbData.data?.[0]?.imageUrl
           };
+          shirtTextureUrl = `https://assetdelivery.roblox.com/v1/asset/?id=${avatar.shirt.id}`;
         } catch (e) {
           shirtAsset = {
             id: avatar.shirt.id,
             assetType: 'Shirt',
             name: avatar.shirt.name
           };
+          shirtTextureUrl = `https://assetdelivery.roblox.com/v1/asset/?id=${avatar.shirt.id}`;
         }
       }
 
@@ -166,18 +174,22 @@ export default function ShowcasePage() {
             name: avatar.pants.name,
             imageUrl: thumbData.data?.[0]?.imageUrl
           };
+          pantsTextureUrl = `https://assetdelivery.roblox.com/v1/asset/?id=${avatar.pants.id}`;
         } catch (e) {
           pantsAsset = {
             id: avatar.pants.id,
             assetType: 'Pants',
             name: avatar.pants.name
           };
+          pantsTextureUrl = `https://assetdelivery.roblox.com/v1/asset/?id=${avatar.pants.id}`;
         }
       }
 
+      const displayName = userName || avatar.name || 'Unknown';
+
       setAvatarData({
         userId,
-        userName: userName || avatar.name || 'Unknown',
+        userName: displayName,
         bodyImageUrl: thumbnail.data?.[0]?.imageUrl || '',
         headshotImageUrl: thumbnail.data?.[0]?.imageUrl || '',
         shirt: shirtAsset,
@@ -185,11 +197,11 @@ export default function ShowcasePage() {
         accessories
       });
 
-      if (shirtAsset?.imageUrl) {
-        setShirtImage(shirtAsset.imageUrl);
+      if (shirtTextureUrl) {
+        setShirtImage(shirtTextureUrl);
       }
-      if (pantsAsset?.imageUrl) {
-        setPantsImage(pantsAsset.imageUrl);
+      if (pantsTextureUrl) {
+        setPantsImage(pantsTextureUrl);
       }
 
       const accessoryUrls = accessories.map(a => a.imageUrl).filter(Boolean) as string[];
