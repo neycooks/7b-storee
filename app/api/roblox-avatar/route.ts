@@ -11,11 +11,8 @@ export async function POST(req: NextRequest) {
 
     const cookie = process.env.ROBLOX_SECURITY_COOKIE;
     if (!cookie) {
-      console.error('[Roblox API] No cookie configured!');
       return NextResponse.json({ error: 'Server not configured with Roblox cookie' }, { status: 500 });
     }
-
-    console.log('[Roblox API] Cookie length:', cookie.length);
 
     const headers = {
       'Cookie': `.ROBLOSECURITY=${cookie}`,
@@ -32,46 +29,86 @@ export async function POST(req: NextRequest) {
     const userId = searchData.data[0].id;
     const userName = searchData.data[0].name;
 
-    console.log('[Roblox API] Fetching avatar for userId:', userId);
-
     const avatarRes = await fetch(`https://avatar.roblox.com/v1/users/${userId}/avatar`, { headers });
     const avatar = await avatarRes.json();
 
-    console.log('[Roblox API] Full avatar response:', JSON.stringify(avatar).substring(0, 1500));
-
     if (!avatar || avatar.errors) {
-      console.error('[Roblox API] Avatar errors:', avatar?.errors);
       return NextResponse.json({ error: 'Failed to fetch avatar' }, { status: 500 });
     }
 
+    let shirtAssetId: number | undefined;
+    let pantsAssetId: number | undefined;
     const accessories: Array<{
       id: number;
       assetType: string;
       name: string;
     }> = [];
 
-    if (avatar.assets) {
+    if (avatar.assets && Array.isArray(avatar.assets)) {
       for (const asset of avatar.assets) {
-        if (asset.assetType === 'Hat' || asset.assetType === 'Hair' || 
-            asset.assetType === 'FaceAccessory' || asset.assetType === 'NeckAccessory' ||
-            asset.assetType === 'ShoulderAccessory' || asset.assetType === 'FrontAccessory' ||
-            asset.assetType === 'BackAccessory' || asset.assetType === 'WaistAccessory') {
+        const assetTypeName = asset.assetType?.name;
+        
+        if (assetTypeName === 'Shirt') {
+          shirtAssetId = asset.id;
+        } else if (assetTypeName === 'Pants') {
+          pantsAssetId = asset.id;
+        } else if (assetTypeName === 'HairAccessory') {
           accessories.push({
             id: asset.id,
-            assetType: asset.assetType,
+            assetType: 'Hair',
+            name: asset.name
+          });
+        } else if (assetTypeName === 'Hat') {
+          accessories.push({
+            id: asset.id,
+            assetType: 'Hat',
+            name: asset.name
+          });
+        } else if (assetTypeName === 'FaceAccessory') {
+          accessories.push({
+            id: asset.id,
+            assetType: 'FaceAccessory',
+            name: asset.name
+          });
+        } else if (assetTypeName === 'NeckAccessory') {
+          accessories.push({
+            id: asset.id,
+            assetType: 'NeckAccessory',
+            name: asset.name
+          });
+        } else if (assetTypeName === 'ShoulderAccessory') {
+          accessories.push({
+            id: asset.id,
+            assetType: 'ShoulderAccessory',
+            name: asset.name
+          });
+        } else if (assetTypeName === 'BackAccessory') {
+          accessories.push({
+            id: asset.id,
+            assetType: 'BackAccessory',
+            name: asset.name
+          });
+        } else if (assetTypeName === 'FrontAccessory') {
+          accessories.push({
+            id: asset.id,
+            assetType: 'FrontAccessory',
+            name: asset.name
+          });
+        } else if (assetTypeName === 'WaistAccessory') {
+          accessories.push({
+            id: asset.id,
+            assetType: 'WaistAccessory',
             name: asset.name
           });
         }
       }
     }
 
-    console.log('[Roblox API] Shirt:', avatar.shirt, 'Pants:', avatar.pants, 'Assets count:', avatar.assets?.length || 0);
-
     return NextResponse.json({
       userId,
       userName,
-      shirtAssetId: avatar.shirt?.id,
-      pantsAssetId: avatar.pants?.id,
+      shirtAssetId,
+      pantsAssetId,
       accessories
     });
   } catch (error) {
