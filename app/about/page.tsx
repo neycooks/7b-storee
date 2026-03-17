@@ -645,7 +645,7 @@ export default function About() {
               </div>
             </div>
 
-            {activeTab !== 'leagues' && activeTab !== 'menu' && (
+            {activeTab !== 'leagues' && activeTab !== 'menu' && activeTab !== 'rankings' && (
               <div className="flex gap-4 px-6 pb-0">
                 <button onClick={() => setShowCreateForm(true)} className="px-6 py-3 bg-primary text-black rounded-xl font-bold hover:opacity-90 transition">+ Create</button>
               </div>

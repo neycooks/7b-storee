@@ -587,6 +587,7 @@ export default function ShowcasePage() {
             <h3 className="text-white font-bold mb-3 flex items-center gap-2">
               <Search size={18} className="text-primary" />
               Fetch Roblox Avatar
+              <span className="px-2 py-0.5 bg-yellow-500 text-black text-xs font-bold rounded">BETA</span>
             </h3>
             <p className="text-text-muted text-xs mb-4">Enter a Roblox username to load their clothing</p>
             
@@ -624,6 +625,7 @@ export default function ShowcasePage() {
             <h3 className="text-white font-bold mb-3 flex items-center gap-2">
               <Shirt size={18} className="text-primary" />
               Custom Clothing
+              <span className="px-2 py-0.5 bg-yellow-500 text-black text-xs font-bold rounded">BETA</span>
             </h3>
             
             <div className="space-y-4">
